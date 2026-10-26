@@ -12,4 +12,4 @@ Cloud-01은 샘플 체험과 운영 연결을 분리합니다. 샘플 실행은 
 
 앱은 최초 접속 시 `cloud_pending_items`, `cloud_pending_events` 테이블을 생성합니다. 기존 업무 DB와 별도 DB를 사용하는 것을 권장합니다. 운영 데이터는 GitHub나 Streamlit 서버의 로컬 파일에 저장하지 않습니다.
 
-Excel 자동 연동을 추가할 때는 회사 OneDrive/SharePoint의 특정 파일을 권한을 부여받은 서비스로 읽고, 현재의 검증·버전 비교·일괄 반영 규칙을 재사용할 예정입니다. 자동 동기화 방향과 충돌 승인 담당자를 정한 후 구현합니다.
+PC 로컬 Excel 연결은 [로컬 Excel 안내](LOCAL_EXCEL.md)에 따라 별도 HTTPS 수신 서버와 PC 동기화 프로그램을 설정합니다. 앱과 수신 서버는 같은 PostgreSQL을 사용합니다. 샘플 모드는 실제 파일 연결에 사용할 수 없습니다.

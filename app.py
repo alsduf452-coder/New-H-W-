@@ -12,7 +12,7 @@ from sample_data import sample_items
 
 st.set_page_config(page_title='양산 설비 통합 관리 · Cloud', layout='wide')
 st.title('양산 설비 통합 관리 · Cloud')
-st.caption('CLOUD-01 · PENDING 및 Excel 변경 비교')
+st.caption('CLOUD-02 · PENDING 및 로컬 Excel 연동')
 try:
     settings = dict(st.secrets)
 except FileNotFoundError:
@@ -61,7 +61,7 @@ else:
     st.error('지원하지 않는 저장 모드입니다.')
     st.stop()
 
-page = st.sidebar.radio('화면 선택', ['PENDING 현황', 'Excel 동기화', '변경 이력'])
+page = st.sidebar.radio('화면 선택', ['PENDING 현황', 'Excel 동기화', '로컬 Excel 연동', '변경 이력'])
 if st.sidebar.button('최신 데이터 새로고침'):
     for key in list(st.session_state):
         if key.startswith('snapshot_') or key == 'import_plan':
@@ -69,6 +69,9 @@ if st.sidebar.button('최신 데이터 새로고침'):
     st.rerun()
 if message := st.session_state.pop('flash', None):
     st.success(message)
+from local_ui import render_local
+if page in ('PENDING 현황', '로컬 Excel 연동'):
+    render_local(repo, settings, mode, show_sheets=page == '로컬 Excel 연동')
 try:
     rows = repo.list_items()
 except Exception:
@@ -107,29 +110,33 @@ def save_form(old=None):
             st.rerun()
 
 if page == 'PENDING 현황':
-    st.subheader('PENDING 현황')
-    equipment = st.selectbox('설비 필터', ['전체'] + sorted({r['설비'] for r in rows}))
-    filtered = [r for r in rows if equipment == '전체' or r['설비'] == equipment]
-    total = len(filtered); done = sum(r['상태'] == '완료' for r in filtered)
-    for col, label, value in zip(st.columns(4), ['전체 건수', '완료', '미완료', '완료율'], [total, done, total-done, f'{done/total*100:.1f}%' if total else '0.0%']):
-        col.metric(label, value)
-    st.dataframe(pd.DataFrame(filtered), hide_index=True, use_container_width=True)
-    today = datetime.now(ZoneInfo('Asia/Seoul')).date()
-    counts = {'기한초과': 0, '임박': 0, '여유': 0}; missing = 0
-    for row in filtered:
-        if row['상태'] != '미완료':
-            continue
-        if not row['목표일']:
-            missing += 1; continue
-        days = (date.fromisoformat(row['목표일']) - today).days
-        counts['기한초과' if days < 0 else '임박' if days <= 7 else '여유'] += 1
-    import plotly.graph_objects as go
-    with st.columns(2)[0]:
-        st.subheader('미완료 목표일 현황')
-        fig = go.Figure(go.Bar(x=list(counts), y=list(counts.values()), marker_color=['#dc2626', '#f59e0b', '#2563eb']))
-        fig.update_layout(height=280, margin=dict(l=20, r=20, t=20, b=20), yaxis=dict(dtick=1))
-        st.plotly_chart(fig, use_container_width=True)
-        st.caption(f'한국 날짜 기준 · 임박: 오늘~7일 후 · 목표일 미입력 {missing}건')
+    @st.fragment(run_every=15)
+    def pending_dashboard():
+        st.subheader('PENDING 현황')
+        rows = repo.list_items()
+        equipment = st.selectbox('설비 필터', ['전체'] + sorted({r['설비'] for r in rows}))
+        filtered = [r for r in rows if equipment == '전체' or r['설비'] == equipment]
+        total = len(filtered); done = sum(r['상태'] == '완료' for r in filtered)
+        for col, label, value in zip(st.columns(4), ['전체 건수', '완료', '미완료', '완료율'], [total, done, total-done, f'{done/total*100:.1f}%' if total else '0.0%']):
+            col.metric(label, value)
+        st.dataframe(pd.DataFrame(filtered), hide_index=True, use_container_width=True)
+        today = datetime.now(ZoneInfo('Asia/Seoul')).date()
+        counts = {'기한초과': 0, '임박': 0, '여유': 0}; missing = 0
+        for row in filtered:
+            if row['상태'] != '미완료':
+                continue
+            if not row['목표일']:
+                missing += 1; continue
+            days = (date.fromisoformat(row['목표일']) - today).days
+            counts['기한초과' if days < 0 else '임박' if days <= 7 else '여유'] += 1
+        import plotly.graph_objects as go
+        with st.columns(2)[0]:
+            st.subheader('미완료 목표일 현황')
+            fig = go.Figure(go.Bar(x=list(counts), y=list(counts.values()), marker_color=['#dc2626', '#f59e0b', '#2563eb']))
+            fig.update_layout(height=280, margin=dict(l=20, r=20, t=20, b=20), yaxis=dict(dtick=1))
+            st.plotly_chart(fig, use_container_width=True)
+            st.caption(f'한국 날짜 기준 · 임박: 오늘~7일 후 · 목표일 미입력 {missing}건')
+    pending_dashboard()
     if role == 'editor':
         with st.expander('새 PENDING 등록'):
             save_form()
@@ -145,7 +152,7 @@ if page == 'PENDING 현황':
 elif page == 'Excel 동기화':
     st.subheader('Excel 동기화')
     st.write('최신 Excel 다운로드 → Excel 값 수정 → 파일 업로드 → 변경 비교 → 확인 후 반영 순서입니다.')
-    st.caption('이 버전은 파일 업로드 방식입니다. OneDrive/SharePoint 자동 감지는 아직 연결하지 않았습니다.')
+    st.caption('수동 업로드 화면입니다. PC Excel 자동 연결은 로컬 Excel 연동 화면에서 확인할 수 있습니다.')
     st.download_button('전체 PENDING 연동 Excel 다운로드', pending_excel(rows), 'Cloud_PENDING.xlsx', mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
     if role != 'editor':
         st.info('조회 권한입니다. 변경 반영은 편집 계정으로 로그인해주세요.')
@@ -192,6 +199,8 @@ elif page == 'Excel 동기화':
                             del st.session_state[k]
                     st.session_state.flash = f'{count}건을 반영했습니다.'
                     st.rerun()
+elif page == '로컬 Excel 연동':
+    st.caption('PENDING 열 연결은 수신 서버의 SYNC_MAPPING_JSON에서 설정합니다.')
 else:
     st.subheader('변경 이력')
     events = repo.list_events()

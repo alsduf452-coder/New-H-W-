@@ -1,0 +1,6 @@
+# 이 파일을 config.toml로 복사하세요. 경로는 작은따옴표를 유지하세요.
+excel_path = 'C:\EquipmentData\Pending.xlsx'
+# Streamlit 앱 주소가 아니라 별도로 배포한 수신 서버의 HTTPS 주소입니다.
+server_url = 'https://YOUR-SYNC-SERVER.example.com'
+poll_seconds = 30
+# 토큰은 여기에 쓰지 않습니다. 실행 시 입력하거나 LOCAL_SYNC_TOKEN 환경변수를 사용합니다.
