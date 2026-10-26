@@ -5,13 +5,13 @@ from openpyxl import Workbook, load_workbook
 from openpyxl.styles import Alignment, Font, PatternFill
 from domain import FIELDS, FIELDS_WITH_VERSION, ValidationError, normalize_item
 
-MAX_FILE = 10 * 1024 * 1024
+MAX_FILE = 20 * 1024 * 1024
 MAX_UNCOMPRESSED = 40 * 1024 * 1024
 
 
 def read_pending_excel(content):
     if len(content) > MAX_FILE:
-        raise ValidationError('Excel은 10MB 이하여야 합니다.')
+        raise ValidationError('Excel은 20MB 이하여야 합니다.')
     try:
         with ZipFile(BytesIO(content)) as archive:
             if sum(i.file_size for i in archive.infolist()) > MAX_UNCOMPRESSED:
