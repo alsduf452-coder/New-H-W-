@@ -1,0 +1,16 @@
+.venv/
+.venv312/
+__pycache__/
+.pytest_cache/
+*.pyc
+.streamlit/secrets.toml
+.env
+.env.*
+!.env.example
+data/
+uploads/
+backups/
+*.sqlite3
+*.sqlite3-*
+*.xlsx
+*.json
