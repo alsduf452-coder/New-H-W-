@@ -1,6 +1,6 @@
-# 양산 설비 통합 관리 · Cloud-02
+# 양산 설비 통합 관리 · Cloud-03
 
-기존 로컬 앱과 별도로 만든 Streamlit 클라우드 앱입니다. PENDING 조회·등록·수정, Excel 수동 비교·반영, 변경 이력과 **PC 로컬 Excel 자동 동기화 코드**를 제공합니다. 기존 H/W·REV·Spacing·Flatness 화면과 실제 데이터는 아직 이관하지 않았습니다.
+기존 로컬 앱과 별도로 만든 Streamlit 클라우드 앱입니다. PENDING 조회·등록·수정, Excel 수동 비교·반영, 변경 이력과 **PC 로컬 Excel 자동 동기화 코드**를 제공합니다. OCTA H/W Excel의 부품 이력·Spacing·Flatness 조회를 지원합니다. 기존 로컬 앱의 전체 기능 및 REV 관리는 아직 이관하지 않았습니다.
 
 ## 샘플로 실행하기
 
@@ -38,3 +38,7 @@ streamlit run app.py
 ```
 
 테스트: `pip install -r requirements.txt -r requirements-sync.txt pytest httpx` 후 `python -m pytest -q`. 테스트에는 샘플 데이터만 사용합니다. 실제 사용자 PC와 운영 서버의 연결 검증은 배포 후 진행해야 합니다.
+
+## Cloud-03: OCTA H/W Excel
+
+설비 H/W 양식은 `SYNC_MAPPING_JSON={"mode":"hw"}`로 연결합니다. `이력`의 챔버별 부품/교체 이력, Spacing 9점, Diffuser·Susceptor Flatness 5×7 표와 Center(R3C4), 최신 측정 요약 및 월별 건수를 표시합니다. [설정 및 범위](docs/LOCAL_EXCEL.md#octa-설비-hw-양식-연결-cloud-03)를 확인하세요. 원본 업무 파일은 저장소에 포함하지 않습니다.

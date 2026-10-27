@@ -12,7 +12,7 @@ from sample_data import sample_items
 
 st.set_page_config(page_title='양산 설비 통합 관리 · Cloud', layout='wide')
 st.title('양산 설비 통합 관리 · Cloud')
-st.caption('CLOUD-02 · PENDING 및 로컬 Excel 연동')
+st.caption('CLOUD-03 · PENDING / 설비 H/W Excel 연동')
 try:
     settings = dict(st.secrets)
 except FileNotFoundError:

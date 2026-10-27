@@ -10,12 +10,15 @@ from cloud_store import Repository, ConflictError
 from domain import ValidationError, FIELDS
 from excel_sync import MAX_FILE
 from workbook_mapping import workbook_view
+from hw_excel import parse_hw, SCHEMA_VERSION
 
 
 def load_mapping(raw):
     try:
         mapping = json.loads(raw or '{}')
         if not isinstance(mapping, dict):
+            raise ValueError()
+        if mapping.get('mode', 'pending') not in ('pending', 'hw'):
             raise ValueError()
         if not isinstance(mapping.get('pending_sheet', 'PENDING'), str):
             raise ValueError()
@@ -41,7 +44,7 @@ def create_app(repository=None, token=None, source_id=None, mapping=None):
     if not re.fullmatch(r'[A-Za-z0-9_-]{1,80}', source_id):
         raise ValueError('SYNC_SOURCE_ID는 영문·숫자·밑줄·하이픈 80자 이내로 설정해주세요.')
     mapping = load_mapping(json.dumps(mapping)) if mapping is not None else load_mapping(os.environ.get('SYNC_MAPPING_JSON', '{}'))
-    mapping_hash = hashlib.sha256(json.dumps(mapping, sort_keys=True).encode()).hexdigest()
+    mapping_hash = hashlib.sha256(json.dumps({'mapping': mapping, 'hw_parser': SCHEMA_VERSION}, sort_keys=True).encode()).hexdigest()
     if repository is None:
         url = os.environ.get('DATABASE_URL', '')
         if not url.startswith(('postgres://', 'postgresql://', 'postgresql+psycopg://')):
@@ -87,6 +90,7 @@ def create_app(repository=None, token=None, source_id=None, mapping=None):
             raise HTTPException(400, '파일 해시가 일치하지 않습니다.')
         try:
             previews, pending, warning = await run_in_threadpool(workbook_view, content, mapping)
+            hw = await run_in_threadpool(parse_hw, content) if mapping.get('mode') == 'hw' else None
         except ValidationError as exc:
             raise HTTPException(422, str(exc)) from None
         except Exception:
@@ -95,7 +99,9 @@ def create_app(repository=None, token=None, source_id=None, mapping=None):
         previews = {name: {'rows': [[str(v)[:2000] if v is not None else '' for v in row] for row in sheet['rows']], 'truncated': sheet['truncated']} for name, sheet in previews.items()}
         if len(json.dumps(previews, ensure_ascii=False).encode()) > 8 * 1024 * 1024:
             raise HTTPException(422, '시트 미리보기 데이터가 너무 큽니다. 불필요한 긴 셀 내용을 줄여주세요.')
-        state = {'file_hash': digest, 'mapping_hash': mapping_hash, 'warning': warning, 'sheet_names': list(previews)}
+        if hw is not None:
+            previews['__hw_data__'] = hw
+        state = {'mode': mapping.get('mode', 'pending'), 'hw_records': len(hw['measurements']) if hw else 0, 'file_hash': digest, 'mapping_hash': mapping_hash, 'warning': warning, 'sheet_names': [name for name in previews if name != '__hw_data__']}
         try:
             result = await run_in_threadpool(repository.ingest_local, source_id, int(raw_revision), state, previews, pending)
         except ConflictError as exc:

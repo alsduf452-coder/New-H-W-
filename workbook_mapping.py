@@ -29,6 +29,8 @@ def workbook_view(content, config):
             values = list(sheet.iter_rows(min_row=1, max_row=min(sheet.max_row or 1, limit), max_col=min(sheet.max_column or 1, 50), values_only=True))
             budget -= sum(len(r) for r in values)
             previews[sheet.title] = {'rows': values, 'truncated': (sheet.max_row or 0) > limit or (sheet.max_column or 0) > 50}
+        if config.get('mode') == 'hw':
+            return previews, None, None
         name = config.get('pending_sheet', 'PENDING')
         if name not in book.sheetnames:
             return previews, None, f'PENDING 연결 대상 시트({name})가 없습니다. 표 조회만 가능합니다.'

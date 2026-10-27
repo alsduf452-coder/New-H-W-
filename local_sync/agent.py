@@ -73,10 +73,12 @@ def sync_once(config, token, session=None, settle_seconds=2):
         content = stable_read(config['excel_path'], settle_seconds)
         digest = hashlib.sha256(content).hexdigest()
         if status.get('file_hash') == digest and not status.get('resend_required'):
-            return '변경 없음' if status.get('pending_status') == 'applied' else '시트 전송 완료 · PENDING 열 연결 설정 필요'
+            return 'H/W 변경 없음' if status.get('mode') == 'hw' else '변경 없음' if status.get('pending_status') == 'applied' else '시트 전송 완료 · PENDING 열 연결 설정 필요'
         headers.update({'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'If-Match': str(status['revision']), 'X-Content-SHA256': digest})
         response = session.post(config['server_url'] + '/v1/source/workbook', headers=headers, data=content, timeout=(10, 120), allow_redirects=False)
         result = check_response(response)
+        if result.get('mode') == 'hw':
+            return f"H/W 전송 완료 · 측정 기록 {result.get('hw_records', 0)}건 반영"
         state = result.get('pending_status')
         if state == 'conflict':
             return '시트 전송 완료 · PENDING 충돌로 반영 보류 (앱에서 확인)'

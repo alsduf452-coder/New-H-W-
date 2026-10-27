@@ -133,7 +133,7 @@ class Repository:
                 result = {'changed': 0, 'conflicts': [], 'missing': []}
                 if pending is not None:
                     result = self.sync_source('local:' + source_id, state['file_hash'] + ':' + state['mapping_hash'], pending, _connection=conn)
-                state = {**state, 'changed': result['changed'], 'conflicts': result['conflicts'], 'missing_count': len(result['missing']), 'pending_status': 'mapping_required' if pending is None else 'conflict' if result['conflicts'] else 'applied', 'received_at': datetime.now(timezone.utc).isoformat()}
+                state = {**state, 'changed': result['changed'], 'conflicts': result['conflicts'], 'missing_count': len(result['missing']), 'pending_status': 'not_applicable' if state.get('mode') == 'hw' else 'mapping_required' if pending is None else 'conflict' if result['conflicts'] else 'applied', 'received_at': datetime.now(timezone.utc).isoformat()}
                 if old:
                     changed = conn.execute(update(self.uploads).where(self.uploads.c.id == source_id, self.uploads.c.revision == revision).values(revision=revision+1, state=state, previews=previews))
                     if changed.rowcount != 1:

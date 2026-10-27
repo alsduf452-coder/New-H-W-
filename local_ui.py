@@ -29,6 +29,8 @@ def render_local(repo, settings, mode, show_sheets=False):
             if state.get('conflicts'):
                 st.error('Excel과 앱의 변경이 충돌하여 PENDING 반영을 보류했습니다. 양쪽 항목을 확인하여 같은 값으로 맞춰주세요.')
                 st.dataframe(state['conflicts'], hide_index=True, use_container_width=True)
+            elif state.get('mode') == 'hw':
+                st.caption(f"H/W 반영 완료 · 측정 기록 {state.get('hw_records', 0)}건")
             elif state.get('pending_status') == 'applied':
                 st.caption('PENDING 반영 완료 · Excel에서 빠진 항목은 DB에 유지합니다.')
             if not show_sheets:
@@ -37,7 +39,12 @@ def render_local(repo, settings, mode, show_sheets=False):
             if st.session_state.get('local_preview_key') != cache_key:
                 st.session_state.local_preview_data = repo.local_previews(source_id)
                 st.session_state.local_preview_key = cache_key
-            previews = st.session_state.local_preview_data
+            previews = dict(st.session_state.local_preview_data)
+            hw = previews.pop('__hw_data__', None)
+            if hw:
+                from hw_ui import render_hw
+                render_hw(hw)
+                st.subheader('원본 시트 미리보기')
             st.caption('시트별 값 미리보기 · 최대 시트당 500행·50열 / 전체 100,000셀 · Excel 서식·병합·차트는 복제하지 않습니다. 긴 셀은 2,000자까지만 표시합니다.')
             if not previews:
                 st.info('표시할 시트가 없습니다.'); return
