@@ -5,27 +5,42 @@ import pandas as pd
 import streamlit as st
 
 STYLE = '''<style>
-[data-testid="stAppViewContainer"],.stApp{background:#e2e8f0;color:#172b4d}
-[data-testid="stSidebar"]{background:#cbd5e1;border-right:1px solid #b6c4d5}
-.block-container{max-width:1500px;padding-top:2rem}
-h1{font-size:30px!important;letter-spacing:-.7px}
-[data-testid="stButton"] button,[data-testid="stDownloadButton"] button{background:#f1f5f9;color:#173c72;border:1px solid #94a3b8;border-radius:6px;min-height:38px}
-[data-testid="stButton"] button[kind="primary"]{background:#bfdbfe!important;border:2px solid #2563eb!important;color:#123d80!important}
-[data-testid="stMetric"]{background:#f1f5f9;border:1px solid #94a3b8;border-radius:8px;padding:12px;text-align:center}
-[class*="st-key-classic_kpi"] button{height:76px;width:100%}
-[class*="st-key-classic_kpi"] button p{font-size:26px;font-weight:700}
-.classic-table-wrap{overflow:auto;border:1px solid #94a3b8;border-radius:7px;margin:10px 0}
-.classic-table{width:100%;border-collapse:collapse;background:#f1f5f9;color:#172b4d;table-layout:fixed;font-size:13px}
-.classic-table th{background:#cbd5e1;text-align:center;font-weight:600}
-.classic-table td,.classic-table th{border:1px solid #94a3b8;padding:9px 8px;white-space:pre-wrap;overflow-wrap:anywhere;vertical-align:middle}
-.classic-table tr:nth-child(even) td{background:#e8eef5}
+[data-testid="stAppViewContainer"],.stApp{background:#f3f6fa;color:#24364b}
+[data-testid="stHeader"]{background:rgba(243,246,250,.96)}
+[data-testid="stSidebar"]{background:#4b6279;border-right:1px solid #40576e}
+[data-testid="stSidebar"] [data-testid="stMarkdownContainer"],
+[data-testid="stSidebar"] [data-testid="stCaptionContainer"],
+[data-testid="stSidebar"] label{color:#f0f5fb!important}
+[data-testid="stSidebar"] h2,[data-testid="stSidebar"] h3{color:#fff!important}
+[data-testid="stSidebar"] [data-testid="stButton"] button{background:#536d85;color:#f5f8fc;border-color:#71869b;box-shadow:none}
+[data-testid="stSidebar"] [data-testid="stButton"] button:hover{background:#617e98;border-color:#a4bfd7}
+[data-testid="stSidebar"] [data-testid="stButton"] button p{color:inherit!important}
+.block-container{max-width:1500px;padding-top:2.2rem;padding-bottom:3rem}
+h1{font-size:30px!important;letter-spacing:-.7px;color:#24364b}
+h2{font-size:25px!important;letter-spacing:-.5px}h3{font-size:20px!important}
+[data-testid="stCaptionContainer"]{color:#60758b}
+[data-testid="stButton"] button,[data-testid="stDownloadButton"] button{background:#fff;color:#365f88;border:1px solid #cfdae5;border-radius:9px;min-height:40px;transition:background .15s,border-color .15s}
+[data-testid="stButton"] button:hover,[data-testid="stDownloadButton"] button:hover{background:#edf4fc;border-color:#739ac2}
+[data-testid="stButton"] button[kind="primary"]{background:#3979bb!important;border:1px solid #3979bb!important;color:#fff!important;box-shadow:0 3px 8px #294a6d18}
+button:focus-visible{outline:3px solid #81b4e5!important;outline-offset:2px}
+[data-testid="stMetric"]{background:#fff;border:1px solid #dce5ee;border-radius:12px;padding:16px;text-align:center}
+[class*="st-key-classic_kpi"] button{height:84px;width:100%;background:#fff;border:1px solid #dce5ee;box-shadow:0 3px 12px #294a6d08;border-radius:12px}
+[class*="st-key-classic_kpi"] button p{font-size:28px;font-weight:700;color:#315d88}
+[data-testid="stDataFrame"],[data-testid="stPlotlyChart"]{border:1px solid #dce5ee;border-radius:12px;overflow:hidden;background:#fff}
+[data-testid="stPlotlyChart"]{padding:6px}
+[data-testid="stExpander"]{background:#fff;border-radius:10px}
+.classic-table-wrap{overflow:auto;border:1px solid #cfdae5;border-radius:12px;margin:10px 0}
+.classic-table{width:100%;border-collapse:collapse;background:#ffffff;color:#24364b;table-layout:fixed;font-size:13px}
+.classic-table th{background:#e7eef6;text-align:center;font-weight:600}
+.classic-table td,.classic-table th{border:1px solid #d5e0eb;padding:10px 9px;white-space:pre-wrap;overflow-wrap:anywhere;vertical-align:middle}
+.classic-table tr:nth-child(even) td{background:#f5f8fc}
 .classic-parts{min-width:680px;font-size:11px}.classic-parts th:first-child{width:12%}.classic-parts td{vertical-align:top}
 .part-sn{background:#dbe5f0;border:1px solid #b6c4d5;padding:5px;border-radius:3px;margin-bottom:5px}
 .part-age{padding:4px;border-radius:3px;margin-top:4px}
 .classic-detail th{width:18%}.classic-detail td{text-align:left}
 .classic-measure th,.classic-measure td{text-align:center;padding:6px 3px}.classic-measure small{display:block;font-size:9px;color:#64748b}.classic-measure strong{display:block;background:#e2e8f0;padding:9px 0;border-radius:3px;margin:3px}
 .classic-badges{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}.classic-badges span{border:1px solid #94a3b8;border-radius:4px;background:#dbeafe;padding:4px 8px;font-size:12px}
-.classic-work{background:#f1f5f9;border:1px solid #94a3b8;border-radius:8px;padding:14px;margin-bottom:14px}.classic-work p{white-space:pre-wrap;overflow-wrap:anywhere;margin:10px 0;font-size:13px}.classic-work .reason{border-top:1px solid #b6c4d5;padding-top:10px}.classic-work .footer{border-top:1px solid #cbd5e1;padding:9px 0 4px;color:#64748b;font-size:12px}
+.classic-work{background:#fff;border:1px solid #d5e0eb;border-radius:12px;padding:18px;margin-bottom:14px}.classic-work p{white-space:pre-wrap;overflow-wrap:anywhere;margin:10px 0;font-size:13px}.classic-work .reason{border-top:1px solid #b6c4d5;padding-top:10px}.classic-work .footer{border-top:1px solid #cbd5e1;padding:9px 0 4px;color:#64748b;font-size:12px}
 .spacing-values {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));border:1px solid #94a3b8;border-radius:9px;overflow:hidden;background:#f1f5f9}
 .spacing-cell {min-height:135px;padding:12px;border:1px solid #cbd5e1;display:flex;flex-direction:column;gap:7px;color:#172b4d}
 .spacing-cell strong {font-size:27px;line-height:1.25;overflow-wrap:anywhere}.spacing-cell small {font-size:12px}.spacing-cell span {font-size:11px;color:#475569}

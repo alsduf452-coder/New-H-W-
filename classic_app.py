@@ -10,7 +10,7 @@ from login_ui import require_local, guard_fragment
 st.set_page_config(page_title='양산 설비 통합 관리 · Excel 연동', page_icon='🔷', layout='wide')
 st.markdown(STYLE,unsafe_allow_html=True)
 st.title('양산 설비 통합 관리')
-st.caption('CLASSIC-CLOUD-02 · HW-25 화면 구성 · Excel 자동 연동 · 조회 전용')
+st.caption('CLASSIC-CLOUD-03 · Soft Slate · Excel 자동 연동 · 조회 전용')
 try:
     settings=dict(st.secrets)
 except FileNotFoundError:
