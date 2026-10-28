@@ -12,8 +12,8 @@ SESSION_SECONDS = 8 * 60 * 60
 
 
 def hash_password(password):
-    if not 12 <= len(password) <= 256:
-        raise ValueError('비밀번호는 12~256자로 설정해주세요.')
+    if not 4 <= len(password) <= 256:
+        raise ValueError('비밀번호는 4~256자로 설정해주세요.')
     salt = secrets.token_bytes(16)
     digest = hashlib.pbkdf2_hmac('sha256', password.encode(), salt, ITERATIONS)
     return f'pbkdf2_sha256${ITERATIONS}${salt.hex()}${digest.hex()}'

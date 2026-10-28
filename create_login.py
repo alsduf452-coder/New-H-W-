@@ -9,7 +9,7 @@ def main():
     username = input('로그인 아이디 (영문 소문자/숫자/_/- 3~64자): ').strip().lower()
     if not re.fullmatch(r'[a-z0-9_-]{3,64}', username):
         raise ValueError('아이디 형식을 확인해주세요.')
-    password = getpass.getpass('새 비밀번호 (12자 이상, 입력 내용 숨김): ')
+    password = getpass.getpass('새 비밀번호 (4자 이상, 입력 내용 숨김): ')
     if password != getpass.getpass('비밀번호 다시 입력: '):
         raise ValueError('비밀번호가 일치하지 않습니다.')
     encoded = hash_password(password)

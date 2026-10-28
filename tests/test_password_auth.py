@@ -13,8 +13,9 @@ def test_hash_verification_salts_and_settings(account):
     assert verify_password('sample-test-password-123',account['password_hash'])
     assert not verify_password('wrong',account['password_hash'])
     assert not verify_password('sample-test-password-123','plaintext')
+    assert verify_password('1234', hash_password('1234'))
     assert account['password_hash']!=hash_password('sample-test-password-123')
-    with pytest.raises(ValueError):hash_password('short')
+    with pytest.raises(ValueError):hash_password('abc')
     with pytest.raises(ValueError):accounts({'local_auth':{'users':{'admin':{'password_hash':'plaintext','role':'editor'}}}})
 
 

@@ -10,7 +10,7 @@ GitHub에서 최신 ZIP을 받아 압축을 풉니다. 프로젝트 최상위 �
 py -3.12 .\create_login.py
 ```
 
-아이디와 새 비밀번호를 두 번 입력합니다. 비밀번호는 12~256자이며 화면에 표시되지 않습니다. 기존 Render SYNC_TOKEN과는 별개입니다. `login-secrets.generated.toml` 파일이 생성됩니다. 파일에는 비밀번호 원문이 아닌 임의 salt와 PBKDF2-SHA256 600,000회 해시가 기록됩니다. 생성 파일도 GitHub나 채팅에 올리지 않습니다.
+아이디와 새 비밀번호를 두 번 입력합니다. 비밀번호는 4~256자이며 화면에 표시되지 않습니다. 기존 Render SYNC_TOKEN과는 별개입니다. `login-secrets.generated.toml` 파일이 생성됩니다. 파일에는 비밀번호 원문이 아닌 임의 salt와 PBKDF2-SHA256 600,000회 해시가 기록됩니다. 생성 파일도 GitHub나 채팅에 올리지 않습니다.
 
 ## 2. Streamlit Secrets 설정
 
