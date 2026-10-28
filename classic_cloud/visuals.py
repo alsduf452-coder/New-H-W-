@@ -26,6 +26,10 @@ h1{font-size:30px!important;letter-spacing:-.7px}
 .classic-measure th,.classic-measure td{text-align:center;padding:6px 3px}.classic-measure small{display:block;font-size:9px;color:#64748b}.classic-measure strong{display:block;background:#e2e8f0;padding:9px 0;border-radius:3px;margin:3px}
 .classic-badges{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}.classic-badges span{border:1px solid #94a3b8;border-radius:4px;background:#dbeafe;padding:4px 8px;font-size:12px}
 .classic-work{background:#f1f5f9;border:1px solid #94a3b8;border-radius:8px;padding:14px;margin-bottom:14px}.classic-work p{white-space:pre-wrap;overflow-wrap:anywhere;margin:10px 0;font-size:13px}.classic-work .reason{border-top:1px solid #b6c4d5;padding-top:10px}.classic-work .footer{border-top:1px solid #cbd5e1;padding:9px 0 4px;color:#64748b;font-size:12px}
+.spacing-values {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));border:1px solid #94a3b8;border-radius:9px;overflow:hidden;background:#f1f5f9}
+.spacing-cell {min-height:135px;padding:12px;border:1px solid #cbd5e1;display:flex;flex-direction:column;gap:7px;color:#172b4d}
+.spacing-cell strong {font-size:27px;line-height:1.25;overflow-wrap:anywhere}.spacing-cell small {font-size:12px}.spacing-cell span {font-size:11px;color:#475569}
+.spacing-center {background:#e0f2fe;border:2px solid #0891b2}.measurement-svg {width:100%;height:auto;display:block;background:#f1f5f9;border:1px solid #94a3b8;border-radius:10px}
 </style>'''
 
 
@@ -80,6 +84,7 @@ def measurement_table(grid, spacing=False):
 
 
 def diagram_svg(grid, spacing=False, limits=None):
+    if spacing:return spacing_diagram_svg(grid)
     values=[v for row in grid for v in row if numeric(v)]
     low,high=limits or ((min(values),max(values)) if values else (0,0))
     nr,nc=len(grid),len(grid[0]);width=560/nc;height=310/nr
@@ -97,3 +102,52 @@ def diagram_svg(grid, spacing=False, limits=None):
             ink='#475569' if not numeric(v) else '#ffffff'
             out.append(f'<rect x="{x}" y="{y}" width="{width}" height="{height}" fill="{color}" stroke="#cbd5e1"/><text x="{x+4}" y="{y+13}" font-size="10" fill="{ink}">{label}</text><text x="{x+width/2}" y="{y+height/2+7}" text-anchor="middle" font-size="19" font-weight="700" fill="{ink}">{escape(number(v))}</text>')
     return ''.join(out)+'</svg>'
+
+SPACING_LAYOUT=[[1,6,2],[9,5,7],[4,8,3]]
+SPACING_LABELS={1:'G/V 좌',6:'G/V 중앙',2:'G/V 우',9:'중앙 좌',5:'Center 기준',7:'중앙 우',4:'Window 좌',8:'Window 중앙',3:'Window 우'}
+
+def measurement_number(value):
+    return "미측정" if value is None or value=="" else number(value)
+
+def spacing_values(grid):
+    values=[None]*9
+    for row,points in zip(grid,SPACING_LAYOUT):
+        for value,point in zip(row,points):values[point-1]=value
+    return values
+
+def spacing_table_html(grid):
+    values=spacing_values(grid)
+    from html import escape
+    cells=[]
+    for row in SPACING_LAYOUT:
+        for point in row:
+            v=values[point-1];delta=None if not numeric(v) else round(v-885,3)
+            color='#64748b' if not numeric(v) else '#1d4ed8' if delta<0 else '#b91c1c' if delta>0 else '#047857'
+            cells.append(f'<div class="spacing-cell {"spacing-center" if point==5 else ""}"><small>P{point} · {SPACING_LABELS[point]}</small><strong>{escape(measurement_number(v))}</strong><span>mils</span><small style="color:{color}">885 대비 {"—" if delta is None else f"{delta:+g}"}</small></div>')
+    return '<div class="spacing-values">'+''.join(cells)+'</div>'
+
+
+def spacing_diagram_svg(grid,table_mode=False):
+    values=spacing_values(grid)
+    from html import escape
+    svg=['<svg xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Spacing 9포인트 위치도" viewBox="0 0 700 510" class="measurement-svg">',
+         '<rect x="35" y="40" width="630" height="420" rx="24" fill="#e5ecf5" stroke="#64748b" stroke-width="3"/>',
+         '<rect x="62" y="67" width="576" height="366" rx="14" fill="#f1f5f9" stroke="#94a3b8" stroke-width="2"/>',
+         '<path d="M350 68V432M64 250H636" stroke="#94a3b8" stroke-dasharray="4 5"/>',
+         '<text x="350" y="24" text-anchor="middle" fill="#075985" font-size="18" font-weight="700">▲ GATE VALVE · G/V 측</text>',
+         '<text x="350" y="490" text-anchor="middle" fill="#92400e" font-size="18" font-weight="700">▼ WINDOW 측</text>']
+    if table_mode:
+        svg=svg[:1]+['<rect x="62" y="67" width="576" height="366" rx="12" fill="#f1f5f9" stroke="#94a3b8"/>','<text x="350" y="24" text-anchor="middle" fill="#075985" font-size="18" font-weight="700">▲ GATE VALVE · G/V 측</text>','<text x="350" y="490" text-anchor="middle" fill="#92400e" font-size="18" font-weight="700">▼ WINDOW 측</text>']
+    for y,row in enumerate(SPACING_LAYOUT):
+        for x,point in enumerate(row):
+            left=82+x*185;top=90+y*112;v=values[point-1]
+            stroke='#0891b2' if point==5 else '#94a3b8'
+            svg.append(f'<rect x="{left}" y="{top}" width="166" height="86" rx="9" fill="{"#e0f2fe" if point==5 else "#ffffff"}" stroke="{stroke}" stroke-width="{3 if point==5 else 1.5}"/>')
+            svg.append(f'<text x="{left+83}" y="{top+21}" text-anchor="middle" font-size="13" fill="#334155">P{point} · {SPACING_LABELS[point]}</text>')
+            svg.append(f'<text x="{left+83}" y="{top+49}" text-anchor="middle" font-size="25" font-weight="700" fill="#172b4d">{escape(measurement_number(v))}</text>')
+            delta='—' if not numeric(v) else f'{v-885:+.1f} mils'
+            color='#64748b' if not numeric(v) else '#1d4ed8' if v<885 else '#b91c1c' if v>885 else '#047857'
+            svg.append(f'<text x="{left+83}" y="{top+71}" text-anchor="middle" font-size="13" fill="{color}">{delta}</text>')
+    return ''.join(svg)+'</svg>'
+
+

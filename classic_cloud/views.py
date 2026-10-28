@@ -7,7 +7,7 @@ import plotly.express as px
 import plotly.graph_objects as go
 import streamlit as st
 from classic_cloud import model
-from classic_cloud.visuals import detail, installed_html, measurement_table, diagram_svg, number, numeric
+from classic_cloud.visuals import detail, installed_html, measurement_table, diagram_svg, number, numeric, spacing_table_html
 
 
 def downloads(frame,name,extra=None):
@@ -145,12 +145,14 @@ def measurement(hw,chamber,kind):
             panel.subheader(item['date']);panel.caption(item['reason'])
             panel.markdown(diagram_svg(item['grid'],spacing,limits),unsafe_allow_html=True)
         delta=[[b-a if numeric(a) and numeric(b) else None for a,b in zip(left,right)] for left,right in zip(other['grid'],record['grid'])]
-        st.caption('차이 = 선택 기록 − 비교 대상 · 두 위치도는 같은 색상 범위를 사용합니다.')
+        st.caption('차이 = 선택 기록 − 비교 대상' + ('' if spacing else ' · 두 위치도는 같은 색상 범위를 사용합니다.'))
         st.markdown(measurement_table(delta,spacing),unsafe_allow_html=True)
     else:
         left,right=st.columns(2)
         left.subheader(kind+' 실측 데이터');right.subheader(kind+' 측정 위치도')
-        left.markdown(measurement_table(record['grid'],spacing),unsafe_allow_html=True)
+        if spacing:
+            for panel in (left,right):panel.caption('▲ G/V 측: ①⑥② / 중앙: ⑨⑤⑦ / ▼ Window 측: ④⑧③')
+        left.markdown(spacing_table_html(record['grid']) if spacing else measurement_table(record['grid']),unsafe_allow_html=True)
         right.markdown(diagram_svg(record['grid'],spacing),unsafe_allow_html=True)
         st.dataframe([{'최소값':number(record['min']),'최대값':number(record['max']),'Max−Min':number(record['range']),'Center (⑤)' if spacing else 'Center (R3C4)':number(record['center']),'측정 개수':f"{record['count']}/{record['total']}"}],hide_index=True,use_container_width=True)
         st.caption('원본 Excel의 행·열과 부호를 그대로 표시합니다. 수정은 Excel에서 저장하세요. 비수치 값은 통계에서 제외합니다.')
