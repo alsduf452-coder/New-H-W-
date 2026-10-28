@@ -100,3 +100,38 @@ render_hw(st.session_state.hw)
     assert not app.exception
     assert [t.label for t in app.tabs]==['장착 부품','작업·교체 이력','Spacing','Diffuser Flatness','Susceptor Flatness']
     assert any('Center (R3C4)' in table.value.columns for table in app.dataframe)
+
+
+def test_bp_history_header_blank_initial_dates_and_short_dates():
+    book=load_workbook(BytesIO(hw_fixture()))
+    book.remove(book['이력']);sheet=book.create_sheet('이력',0)
+    headers=['Chamber','일자','변경이력','Diffuser','Backing Plate','Susceptor','Shadow Frame','RFG','Matcher','RPSC Reactor','MF Generator']
+    for c,value in enumerate(headers,2):sheet.cell(2,c,value)
+    for r,chamber in enumerate('ABCDE',3):
+        sheet.cell(r,2,chamber);sheet.cell(r,5,'SAMPLE-INITIAL')
+    sheet['D3']='초기셋업';sheet.merge_cells('D3:D7')
+    sheet['B8']='A';sheet['C8']='25.07.24';sheet['D8']='replacement';sheet['E8']='SAMPLE-NEW'
+    for name in ('Spacing','Diff Flatness','Susc Flatness'):
+        s=book[name]
+        for row in s:
+            for cell in row:
+                if cell.value=='Date':s.cell(cell.row,cell.column+1,'25.06.17')
+    out=BytesIO();book.save(out)
+    hw=parse_hw(out.getvalue())
+    assert len(hw['history'])==6
+    assert all(r['date']=='' for r in hw['history'][:5])
+    assert len(hw['warnings'])==5
+    assert hw['installed']['A']['Diffuser']['sn']=='SAMPLE-NEW'
+    assert hw['installed']['B']['Diffuser']['date']==''
+    assert all(m['date']=='2025-06-17' for m in hw['measurements'])
+    assert next(m for m in hw['measurements'] if m['kind']=='Diffuser Flatness')['center']==-23
+    sheet['C8']=None
+    out=BytesIO();book.save(out)
+    with pytest.raises(ValidationError,match='일자'):parse_hw(out.getvalue())
+
+
+@pytest.mark.parametrize('value',['25.02.30','invalid',None])
+def test_invalid_measurement_dates_rejected(value):
+    book=load_workbook(BytesIO(hw_fixture()));book['Diff Flatness']['D5']=value
+    out=BytesIO();book.save(out)
+    with pytest.raises(ValidationError,match='날짜'):parse_hw(out.getvalue())

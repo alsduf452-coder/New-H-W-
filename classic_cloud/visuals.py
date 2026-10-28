@@ -62,7 +62,7 @@ def installed_html(hw, chambers, today):
             except (ValueError,KeyError):days=None
             age='색상 제외' if part in excluded else '—' if days is None else f'{days}일 경과' if days>=0 else '예정일'
             color='#e2e8f0' if part in excluded or days is None else '#fee2e2' if days>=365 else '#fef3c7' if days>=180 else '#dcfce7'
-            cells.append('<td><div class="part-sn">S/N: <b>'+escape(item['sn'])+'</b></div><div>최근 기록일: '+escape(item['date'])+'</div><div class="part-age" style="background:'+color+'">'+escape(age)+'</div></td>')
+            cells.append('<td><div class="part-sn">S/N: <b>'+escape(item['sn'])+'</b></div><div>최근 기록일: '+escape(item['date'] or '미기재')+'</div><div class="part-age" style="background:'+color+'">'+escape(age)+'</div></td>')
         rows.append('<tr>'+''.join(cells)+'</tr>')
     return '<div class="classic-table-wrap"><table class="classic-table classic-parts"><thead><tr><th>부품</th>'+''.join('<th>Chamber '+c+'</th>' for c in chambers)+'</tr></thead><tbody>'+''.join(rows)+'</tbody></table></div>'
 

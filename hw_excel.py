@@ -9,7 +9,7 @@ from openpyxl import load_workbook
 from openpyxl.utils.cell import range_boundaries, get_column_letter
 from domain import ValidationError
 
-SCHEMA_VERSION = 'octa-hw-1'
+SCHEMA_VERSION = 'octa-hw-2'
 REQUIRED = ('이력', 'Spacing', 'Diff Flatness', 'Susc Flatness')
 CHAMBERS = tuple('ABCDE')
 
@@ -34,7 +34,12 @@ def measured_date(value, location):
     if isinstance(value, date):
         return value.isoformat()
     try:
-        return date.fromisoformat(str(value).strip()).isoformat()
+        text = str(value).strip()
+        match = re.fullmatch(r'(\d{2}|\d{4})[./-](\d{1,2})[./-](\d{1,2})', text)
+        if not match:raise ValueError()
+        year, month, day = map(int, match.groups())
+        if year < 100:year += 2000
+        return date(year, month, day).isoformat()
     except ValueError:
         raise ValidationError(f'{location}: 측정/변경 일자가 없거나 날짜 형식이 다릅니다.') from None
 
@@ -56,10 +61,13 @@ def parse_hw(content):
         def raw(name, row, col):
             rows = data[name]
             return rows[row-1][col-1] if 0 < row <= len(rows) and 0 < col <= len(rows[row-1]) else None
-        header = [cell('이력', 3, c) for c in range(2, 13)]
         expected = ['Chamber', '일자', '변경이력', 'Diffuser', 'Backing Plate', 'Susceptor', 'Shadow Frame', 'RFG', 'Matcher', 'Reactor', 'Generator']
-        if header != expected:
-            raise ValidationError('이력 시트 3행의 열 구조가 변경됐습니다. 자동 반영을 보류합니다.')
+        aliases = {'RPSC Reactor':'Reactor', 'MF Generator':'Generator'}
+        headers = [r for r in (2,3) if [aliases.get(cell('이력',r,c),cell('이력',r,c)) for c in range(2,13)] == expected]
+        if len(headers) != 1:
+            raise ValidationError('이력 시트 2~3행의 열 구조를 확인해주세요. 자동 반영을 보류합니다.')
+        history_header = headers[0]
+        warnings = []
         # Fill only actual merged reason cells; do not forward-fill arbitrary empty rows.
         merged_reasons = {}
         with ZipFile(BytesIO(content)) as archive:
@@ -73,17 +81,23 @@ def parse_hw(content):
         parts = expected[3:]
         parts = ['RPSC Reactor' if p == 'Reactor' else p for p in parts]
         history = []
-        for r in range(4, len(data['이력'])+1):
+        for r in range(history_header+1, len(data['이력'])+1):
             values = [cell('이력', r, c) for c in range(2, 13)]
             if all(v is None for v in values):
                 continue
             chamber = str(values[0] or '').strip()
             if chamber not in CHAMBERS:
                 raise ValidationError(f'이력 B{r}: Chamber A~E 값이 필요합니다.')
-            when = measured_date(raw('이력', r, 3), f'이력 C{r}')
+            reason = merged_reasons.get(r, cell('이력', r, 4)) or ''
+            date_value = raw('이력', r, 3)
+            if date_value in (None, '') and re.sub(r'\s', '', str(reason)) in ('초기셋업','초기Setup'):
+                when = ''
+                warnings.append(f'이력 C{r}: 초기 장착 일자 미기재. 경과일은 계산하지 않습니다.')
+            else:
+                when = measured_date(date_value, f'이력 C{r}')
             serials = {part: str(cell('이력', r, c)).strip() for part, c in zip(parts, range(5, 13)) if cell('이력', r, c) not in (None, '')}
             history.append({'chamber': chamber, 'date': when, 'reason': merged_reasons.get(r, cell('이력', r, 4)) or '', 'parts': serials, 'source': f'이력!B{r}:L{r}', 'source_row': r})
-        measurements = []; warnings = []
+        measurements = []
         for sheet_name, kind in [('Spacing', 'Spacing'), ('Diff Flatness', 'Diffuser Flatness'), ('Susc Flatness', 'Susceptor Flatness')]:
             is_spacing = kind == 'Spacing'
             anchors = {2 + 9*i if is_spacing else 3 + 9*i: chamber for i, chamber in enumerate(CHAMBERS)}

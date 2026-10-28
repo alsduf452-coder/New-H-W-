@@ -99,7 +99,7 @@ def work_history(hw,chamber,query=''):
     for record in reversed(events):
         if chamber!='전체' and record['chamber']!=chamber:continue
         if query and query.casefold() not in str(record).casefold():continue
-        body='<div class="classic-work"><div class="classic-badges"><span>'+escape(record['date'])+'</span><span>Chamber '+escape(record['chamber'])+'</span><span>Excel 기록</span></div>'
+        body='<div class="classic-work"><div class="classic-badges"><span>'+escape(record['date'] or '일자 미기재')+'</span><span>Chamber '+escape(record['chamber'])+'</span><span>Excel 기록</span></div>'
         body+='<p>'+escape('\n'.join(record['changes']))+'</p><p class="reason">사유: '+escape(record['reason'] or '—')+'</p><div class="footer">작업자: 원본에 기재 없음</div></div>'
         st.markdown(body,unsafe_allow_html=True)
     if not events:st.info('작업 이력이 없습니다.')
@@ -173,6 +173,9 @@ def hardware(snapshot,chamber,section,flatness,query,equipment_name):
     st.caption(equipment_name)
     hw=snapshot.get('previews',{}).get('__hw_data__')
     if not hw:st.info('H/W 파일 수신을 기다리고 있습니다.');return
+    if hw.get('warnings'):
+        with st.expander('원본 데이터 확인 사항'):
+            for warning in hw['warnings']:st.write(warning)
     chambers=list('ABCDE') if chamber=='전체' else [chamber]
     if section=='설비 현황':
         st.subheader('챔버별 장착 부품 통합 현황')
