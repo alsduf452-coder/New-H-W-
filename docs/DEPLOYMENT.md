@@ -1,6 +1,8 @@
 # 운영 연결 안내
 
-Cloud-01은 샘플 체험과 운영 연결을 분리합니다. 샘플 실행은 바로 가능하지만 실제 DB·로그인 제공자 연결은 운영 계정에서 설정하고 검증해야 합니다.
+Cloud-04는 샘플 체험과 운영 연결을 분리합니다. 샘플 실행은 바로 가능하지만 실제 DB·로그인 제공자 연결은 운영 계정에서 설정하고 검증해야 합니다.
+
+**Google/Microsoft 없이 시작하려면 [자체 로그인 설정](PASSWORD_LOGIN.md)을 사용하세요.** 아래 2~4번은 OIDC를 선택하는 경우의 절차입니다. 자체 로그인에서는 `.streamlit/secrets.password.example.toml`과 생성된 계정 해시를 사용합니다.
 
 1. 회사에서 사용 가능한 PostgreSQL을 준비합니다. 앱 전용 DB 계정에 해당 DB의 테이블 생성·조회·추가·수정 권한을 부여합니다. 연결은 SSL을 사용합니다.
 2. 회사 Microsoft Entra ID 등 OIDC 제공자에서 웹 앱을 등록합니다. callback 주소는 배포된 앱 주소의 `/oauth2callback`입니다. 클라이언트 ID, 비밀키, 제공자 metadata URL을 확인합니다. 로그인 응답에 `email`이 제공되어야 합니다.

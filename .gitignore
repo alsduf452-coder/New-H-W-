@@ -17,3 +17,4 @@ backups/
 local_sync/config.toml
 sync.env
 *.log
+login-secrets.generated.toml

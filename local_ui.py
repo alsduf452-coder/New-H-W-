@@ -16,6 +16,8 @@ def render_local(repo, settings, mode, show_sheets=False):
 
     @st.fragment(run_every=15)
     def view():
+        from login_ui import guard_fragment
+        guard_fragment()
         try:
             state = repo.local_status(source_id)
             if not state['revision']:

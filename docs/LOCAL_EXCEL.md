@@ -34,6 +34,8 @@ Streamlit Cloud는 화면 실행용입니다. 파일 수신 API는 별도 Python
 
 ## 3. Streamlit 앱 운영 모드로 전환
 
+외부 계정 없이 자체 아이디·비밀번호로 로그인하려면 [자체 로그인 안내](PASSWORD_LOGIN.md)를 사용하세요. 아래 OIDC 등록 절차는 생략할 수 있습니다.
+
 Streamlit Cloud의 Secrets에 `.streamlit/secrets.example.toml`을 참고하여 PostgreSQL, OIDC 로그인, 허용 계정을 설정합니다. `[local_excel] source_id = "local-excel"`은 수신 서버와 같게 설정합니다.
 
 OIDC는 Microsoft Entra ID 또는 Google 등 사용 가능한 제공자를 선택할 수 있습니다. Google을 사용하는 경우 metadata URL은 `https://accounts.google.com/.well-known/openid-configuration`이며, Google Cloud에서 웹 OAuth 클라이언트를 등록하고 배포된 앱의 `/oauth2callback`을 승인된 리디렉션 URI로 지정합니다. 회사 계정 정책에 맞는 제공자를 사용하세요. 앱은 로그인 응답의 `email`이 allowed_emails에 있는지 확인합니다.
