@@ -17,7 +17,7 @@
 hw_equipment_name = "표시할 설비 이름"
 ```
 
-앱은 자체 로그인이 필요하며 DB는 기존과 동일한 Render PostgreSQL의 **External Database URL**을 사용합니다. `[local_excel] source_id` 기본값은 `local-excel`, `pending_source_id` 기본값은 `pending-excel`입니다. Render와 PC 설정을 변경할 필요는 없습니다. 새 앱을 만들 때까지 원래 앱은 원래 주소에서 계속 사용할 수 있습니다.
+앱은 자체 로그인이 필요하며 DB는 기존과 동일한 Render PostgreSQL의 **External Database URL**을 사용합니다. `[local_excel] source_id` 기본값은 `local-excel`, `pending_source_id` 기본값은 `pending-excel`입니다. 기존 두 파일은 기존 설정을 사용합니다. 세 번째 15호기 파일은 아래의 3개 파일 연결 절차로 추가합니다. 새 앱을 만들 때까지 원래 앱은 원래 주소에서 계속 사용할 수 있습니다.
 
 Secrets가 없으면 명확하게 표시된 가상 샘플 화면이 나옵니다. 실제 데이터로 자동 전환되지는 않습니다. 기존 회원이 editor 역할이어도 새 앱은 조회만 허용합니다.
 
@@ -39,7 +39,7 @@ PC Excel 수정·저장 → 기존 PC 프로그램 → 기존 수신 서버 → 
 
 원본에서 수신된 데이터만 제공합니다. 기존 로컬 SQLite에만 있던 수동 작업·첨부 사진·별도 REV 수정은 이관하지 않습니다. 원본 Excel에 없는 작업자·교체 전 정보·측정 단위나 물리 이동은 임의 생성하지 않습니다. 작업 카드의 이전 S/N은 이전 Excel 이력 행으로 확인 가능한 범위만 표시합니다.
 
-현재 한 개 H/W 파일과 한 개 PENDING 파일을 지원합니다. REV/보조 시트는 기존 수신 서버 미리보기 한도(시트당 500행·50열, 전체 100,000셀)의 영향을 받으며, 원본 이미지/도형/성적서는 옮기지 않습니다. 전체 원본을 수신하는 기능이 아니라 수신된 셀 값의 조회입니다.
+현재 두 개 H/W 파일(45호기/15호기)과 한 개 PENDING 파일을 지원합니다. REV/보조 시트는 기존 수신 서버 미리보기 한도(시트당 500행·50열, 전체 100,000셀)의 영향을 받으며, 원본 이미지/도형/성적서는 옮기지 않습니다. 전체 원본을 수신하는 기능이 아니라 수신된 셀 값의 조회입니다.
 
 부품 색상은 최근 기록일로부터 180일 이상 주황/365일 이상 빨강입니다. 장비 안전 판정이 아니라 경과일 표시이며 RFG/Matcher/Reactor/Generator는 색상 제외입니다. 5×7 Flatness의 부호·0·미측정 값을 보존합니다. 새 앱에서 측정 수치를 직접 편집하지 않습니다.
 
@@ -51,3 +51,25 @@ streamlit run classic_app.py
 ```
 
 샘플 테스트는 `python -m pytest tests/test_classic.py -q`로 실행합니다. 실제 서버 URL/DB 비밀번호/사용자 Excel은 저장소에 포함하지 않습니다. 기존 앱·수신 서버 코드는 전용 브랜치에 기반 파일로 남아 있으나 새 앱 실행 파일에서 이를 호출하거나 데이터를 수정하지 않습니다.
+
+## 3개 파일 연결 (CLASSIC-CLOUD-02)
+
+PENDING List 1개, 45호기 H/W 1개, 같은 양식의 15호기 H/W 1개를 지원합니다. H/W 설비 선택에서 45호기/15호기를 전환하며 데이터는 소스별로 분리합니다. 15호기 수신 전에는 수신 대기를 표시합니다.
+
+1. Render **Web Service**의 Environment에서 기존 `SYNC_SOURCES_JSON`에 `"hw-15":{"mode":"hw"}`를 추가하고 저장/재배포합니다. 기존 설정이 PENDING 하나뿐이라면 전체 값은 아래와 같습니다. 다른 소스가 있다면 유지하며 추가하세요. PostgreSQL 설정 화면이 아닙니다. 서버 코드 변경은 필요 없습니다.
+
+```json
+{"pending-excel":{"mode":"pending_octa"},"hw-15":{"mode":"hw"}}
+```
+
+2. PC에서 동기화를 Ctrl+C로 중단한 후, `classic-cloud` 브랜치의 `local_sync/agent.py`로 PC 파일을 교체합니다. `config.toml`은 유지하고 아래 두 줄을 추가합니다. 경로는 실제 15호기 파일의 전체 경로로 바꾸세요. 기존 excel_path는 45호기, pending_excel_path는 PENDING 파일입니다.
+
+```toml
+hw15_excel_path = 'C:\실제폴더\15호기_HW.xlsx'
+hw15_source_id = 'hw-15'
+```
+
+3. `start.bat`을 재실행하고 같은 동기화 토큰을 입력합니다. 15호기 H/W 전송 완료를 확인합니다. 한 파일 전송 오류가 있어도 다른 파일은 계속 시도합니다. 각 파일은 20MB 이하입니다.
+4. 새 Streamlit 앱은 기본값으로 hw-15를 조회하므로 기존 Secrets를 유지해도 됩니다. ID를 바꾼 경우에만 기존 `[local_excel]` 안에 `hw15_source_id = "변경한 ID"`를 추가합니다. 동일한 섹션을 두 번 만들지 마세요.
+
+기존 main 브랜치와 기존 앱은 변경하지 않았습니다. PC 프로그램만 새 버전으로 교체하며 현재 45호기/PENDING 설정은 계속 지원합니다. 15호기 실제 파일은 아직 제공받지 않았으므로 첫 전송 시 동일 양식 검증을 통과하는지 확인해야 합니다.

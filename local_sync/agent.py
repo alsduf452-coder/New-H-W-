@@ -41,6 +41,15 @@ def load_config(path):
             raise SyncError('PENDING 소스 ID를 확인해주세요.')
         result['pending_excel_path'] = pending_path
         result['pending_source_id'] = source
+    extra = config.get('hw15_excel_path', '')
+    if extra:
+        path15 = Path(extra).expanduser()
+        if not path15.is_absolute() or path15.suffix.lower() != '.xlsx' or path15.name.startswith('~$') or path15 in (excel, result.get('pending_excel_path')):
+            raise SyncError('hw15_excel_path는 다른 파일과 구분되는 .xlsx 절대 경로여야 합니다.')
+        source15 = config.get('hw15_source_id', 'hw-15')
+        if not isinstance(source15, str) or not re.fullmatch(r'[A-Za-z0-9_-]{1,80}', source15) or source15 in ('local-excel', result.get('pending_source_id')):
+            raise SyncError('15호기 소스 ID가 중복되거나 올바르지 않습니다.')
+        result.update(hw15_excel_path=path15, hw15_source_id=source15)
     return result
 
 
@@ -120,6 +129,8 @@ def main():
     jobs = [('기존 파일', config)]
     if config.get('pending_excel_path'):
         jobs.append(('PENDING', {**config, 'excel_path':config['pending_excel_path'], 'source_id':config['pending_source_id']}))
+    if config.get('hw15_excel_path'):
+        jobs.append(('15호기 H/W', {**config, 'excel_path':config['hw15_excel_path'], 'source_id':config['hw15_source_id']}))
     with requests.Session() as session:
         while True:
             code = 0

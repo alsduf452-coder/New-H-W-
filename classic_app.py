@@ -10,12 +10,13 @@ from login_ui import require_local, guard_fragment
 st.set_page_config(page_title='양산 설비 통합 관리 · Excel 연동', page_icon='🔷', layout='wide')
 st.markdown(STYLE,unsafe_allow_html=True)
 st.title('양산 설비 통합 관리')
-st.caption('CLASSIC-CLOUD-01 · HW-25 화면 구성 · Excel 자동 연동 · 조회 전용')
+st.caption('CLASSIC-CLOUD-02 · HW-25 화면 구성 · Excel 자동 연동 · 조회 전용')
 try:
     settings=dict(st.secrets)
 except FileNotFoundError:
     settings={}
 mode=settings.get('storage',{}).get('mode','demo')
+hw_unit=st.sidebar.selectbox('H/W 설비',['45호기','15호기'],key='classic_hw_unit')
 
 @st.cache_resource
 def reader(url):
@@ -24,7 +25,10 @@ def reader(url):
 if mode=='demo':
     st.info('가상 샘플 미리보기입니다. 운영 데이터를 보려면 새 앱의 Secrets에 기존 DB·자체 로그인 설정을 등록해주세요.')
     from classic_cloud.sample import snapshots
-    def read_sources():return snapshots()
+    def read_sources():
+        data=snapshots()
+        if hw_unit=='15호기':data['hw']={'revision':0,'state':{},'previews':{}}
+        return data
 elif mode=='postgres':
     if settings.get('login',{}).get('method')!='password':
         st.error('새 앱은 자체 로그인을 사용합니다. Secrets의 [login] method를 password로 설정해주세요.');st.stop()
@@ -36,7 +40,7 @@ elif mode=='postgres':
         st.error('운영 DB 설정을 확인해주세요. Render PostgreSQL의 External Database URL이 필요합니다.');st.stop()
     config=settings.get('local_excel',{})
     def read_sources():
-        return {'hw':database.read(config.get('source_id','local-excel')),'pending':database.read(config.get('pending_source_id','pending-excel'))}
+        return {'hw':database.read(config.get('source_id','local-excel') if hw_unit=='45호기' else config.get('hw15_source_id','hw-15')),'pending':database.read(config.get('pending_source_id','pending-excel'))}
 else:
     st.error('저장 모드 설정을 확인해주세요.');st.stop()
 
@@ -83,7 +87,7 @@ def content():
         current=read_sources()
     except Exception:
         st.error('데이터 갱신에 실패했습니다. 잠시 후 다시 확인해주세요.');return
-    for label,snapshot in [('PENDING',current['pending']),('H/W',current['hw'])]:
+    for label,snapshot in [('PENDING',current['pending']),(hw_unit+' H/W',current['hw'])]:
         state=snapshot.get('state',{})
         stamp=state.get('received_at')
         if stamp:
@@ -96,6 +100,6 @@ def content():
             st.warning('기존 앱 DB 반영에 충돌이 있습니다. 새 앱은 가장 최근 수신한 Excel 스냅샷을 표시합니다. 기존 앱의 충돌 내역을 별도로 확인해주세요.')
     if page=='PENDING 현황':views.pending(current['pending'],filters)
     elif page=='PENDING List REV관리':views.revisions(current['pending'])
-    else:views.hardware(current['hw'],chamber,section,flatness,query,settings.get('classic',{}).get('hw_equipment_name','연동 H/W 설비'))
+    else:views.hardware(current['hw'],chamber,section,flatness,query,hw_unit)
 
 content()

@@ -89,3 +89,29 @@ def test_production_requires_login_before_database_read(monkeypatch):
     assert not app.exception
     assert any(s.value=='아이디·비밀번호 로그인' for s in app.subheader)
     assert reads==[]
+
+
+def test_unit_selection_does_not_reuse_45_data():
+    app=AppTest.from_file('../classic_app.py',default_timeout=15).run()
+    click(app,'설비 H/W 이력관리')
+    app.selectbox(key='classic_hw_unit').select('15호기').run()
+    assert not app.exception
+    assert any('수신을 기다리고' in message.value for message in app.info)
+    app.selectbox(key='classic_hw_unit').select('45호기').run()
+    assert not app.exception
+    assert any('챔버별 장착' in message.value for message in app.subheader)
+
+
+def test_three_file_config_and_duplicate_rejection(tmp_path):
+    import pytest
+    from local_sync.agent import load_config, SyncError
+    config=tmp_path/'config.toml'
+    base=f"server_url='https://example.com'\nexcel_path='{tmp_path}/hw45.xlsx'\npending_excel_path='{tmp_path}/pending.xlsx'\n"
+    config.write_text(base+f"hw15_excel_path='{tmp_path}/hw15.xlsx'\n")
+    loaded=load_config(config)
+    assert loaded['hw15_source_id']=='hw-15'
+    assert loaded['pending_source_id']=='pending-excel'
+    config.write_text(base+f"hw15_excel_path='{tmp_path}/hw45.xlsx'\n")
+    with pytest.raises(SyncError):load_config(config)
+    config.write_text(base+f"hw15_excel_path='{tmp_path}/hw15.xlsx'\nhw15_source_id='pending-excel'\n")
+    with pytest.raises(SyncError):load_config(config)
