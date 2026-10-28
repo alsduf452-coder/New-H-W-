@@ -1,4 +1,4 @@
-# 양산 설비 통합 관리 · Cloud-04
+# 양산 설비 통합 관리 · Cloud-05
 
 기존 로컬 앱과 별도로 만든 Streamlit 클라우드 앱입니다. PENDING 조회·등록·수정, Excel 수동 비교·반영, 변경 이력과 **PC 로컬 Excel 자동 동기화 코드**를 제공합니다. OCTA H/W Excel의 부품 이력·Spacing·Flatness 조회를 지원합니다. 기존 로컬 앱의 전체 기능 및 REV 관리는 아직 이관하지 않았습니다.
 
@@ -10,7 +10,7 @@
 
 회사 OneDrive 없이 **PC Excel → PC 동기화 프로그램 → HTTPS 수신 서버 → PostgreSQL → 앱**으로 연결합니다. [설치·배포·열 연결 안내](docs/LOCAL_EXCEL.md)를 순서대로 진행하세요.
 
-- PC 프로그램은 지정한 파일 하나를 30초마다 확인하여 변경된 경우 전송합니다. 인터넷 연결과 실행 중인 PC 프로그램이 필요합니다.
+- PC 프로그램은 지정한 파일을 각각 30초 주기로 확인하여 변경된 경우 전송합니다. 인터넷 연결과 실행 중인 PC 프로그램이 필요합니다.
 - 시트별 값을 앱의 탭과 표로 표시합니다. PENDING은 시트 이름·머리글 행·열 이름을 설정해 현황에 반영합니다.
 - 앱에서 바꾼 값과 충돌하면 파일 전체 PENDING 반영을 보류합니다. Excel에서 빠진 항목은 DB에 유지합니다.
 - 앱은 마지막 수신 시각과 연결 오류·충돌 정보를 표시하며 15초마다 DB를 확인합니다.
@@ -46,3 +46,7 @@ streamlit run app.py
 ## Cloud-03: OCTA H/W Excel
 
 설비 H/W 양식은 `SYNC_MAPPING_JSON={"mode":"hw"}`로 연결합니다. `이력`의 챔버별 부품/교체 이력, Spacing 9점, Diffuser·Susceptor Flatness 5×7 표와 Center(R3C4), 최신 측정 요약 및 월별 건수를 표시합니다. [설정 및 범위](docs/LOCAL_EXCEL.md#octa-설비-hw-양식-연결-cloud-03)를 확인하세요. 원본 업무 파일은 저장소에 포함하지 않습니다.
+
+## Cloud-05: 두 파일 연동
+
+기존 H/W 연결을 유지하며 통합 PENDING 파일을 추가할 수 있습니다. Render에 `SYNC_SOURCES_JSON={"pending-excel":{"mode":"pending_octa"}}`를 추가하고, PC config.toml에 `pending_excel_path`를 지정합니다. [설정 안내](docs/LOCAL_EXCEL.md#cloud-05-hw--통합-pending-두-파일-동기화)를 참고하세요. 실제 업무 Excel·개인명·이슈 내용은 저장소에 포함하지 않습니다.

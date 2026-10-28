@@ -4,3 +4,7 @@ excel_path = 'C:\EquipmentData\Pending.xlsx'
 server_url = 'https://YOUR-SYNC-SERVER.example.com'
 poll_seconds = 30
 # 토큰은 여기에 쓰지 않습니다. 실행 시 입력하거나 LOCAL_SYNC_TOKEN 환경변수를 사용합니다.
+
+# PENDING 파일도 연결할 때 아래 줄을 추가/활성화합니다.
+# pending_excel_path = 'C:\EquipmentData\Pending_List.xlsx'
+# pending_source_id = 'pending-excel'

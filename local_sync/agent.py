@@ -3,6 +3,7 @@ import argparse
 import getpass
 import hashlib
 import os
+import re
 from pathlib import Path
 import time
 import tomllib
@@ -29,7 +30,18 @@ def load_config(path):
     interval = int(config.get('poll_seconds', 30))
     if not 10 <= interval <= 3600:
         raise SyncError('poll_seconds는 10~3600초로 설정해주세요.')
-    return {'server_url': url, 'excel_path': excel, 'poll_seconds': interval}
+    result = {'server_url': url, 'excel_path': excel, 'poll_seconds': interval}
+    pending = config.get('pending_excel_path', '')
+    if pending:
+        pending_path = Path(pending).expanduser()
+        if not pending_path.is_absolute() or pending_path.suffix.lower() != '.xlsx' or pending_path.name.startswith('~$') or pending_path == excel:
+            raise SyncError('pending_excel_path는 H/W와 다른 .xlsx 파일의 절대 경로여야 합니다.')
+        source = config.get('pending_source_id', 'pending-excel')
+        if not re.fullmatch(r'[A-Za-z0-9_-]{1,80}', source) or source == 'local-excel':
+            raise SyncError('PENDING 소스 ID를 확인해주세요.')
+        result['pending_excel_path'] = pending_path
+        result['pending_source_id'] = source
+    return result
 
 
 def stable_read(path, settle_seconds=2):
@@ -68,6 +80,8 @@ def check_response(response):
 def sync_once(config, token, session=None, settle_seconds=2):
     session = session or requests.Session()
     headers = {'Authorization': 'Bearer ' + token}
+    if config.get('source_id'):
+        headers['X-Sync-Source'] = config['source_id']
     try:
         status = check_response(session.get(config['server_url'] + '/v1/source/status', headers=headers, timeout=(10, 60), allow_redirects=False))
         content = stable_read(config['excel_path'], settle_seconds)
@@ -102,17 +116,21 @@ def main():
     token = os.environ.get('LOCAL_SYNC_TOKEN') or getpass.getpass('동기화 토큰 (입력 내용은 표시되지 않음): ')
     if not token or any(c.isspace() for c in token):
         print('동기화 토큰을 확인해주세요.'); return 1
-    print('지정한 Excel 한 개를 감시합니다. 종료: Ctrl+C. 원본 Excel은 수정하지 않습니다.')
+    print('지정한 Excel 파일을 감시합니다. 종료: Ctrl+C. 원본 Excel은 수정하지 않습니다.')
+    jobs = [('기존 파일', config)]
+    if config.get('pending_excel_path'):
+        jobs.append(('PENDING', {**config, 'excel_path':config['pending_excel_path'], 'source_id':config['pending_source_id']}))
     with requests.Session() as session:
         while True:
-            try:
-                message = sync_once(config, token, session)
-                code = 0
-            except SyncError as exc:
-                message = str(exc); code = 1
-            except (KeyError, TypeError, ValueError):
-                message = '설정 또는 서버 응답 형식을 확인해주세요.'; code = 1
-            print(time.strftime('%Y-%m-%d %H:%M:%S'), message, flush=True)
+            code = 0
+            for label, job in jobs:
+                try:
+                    message = sync_once(job, token, session)
+                except SyncError as exc:
+                    message = str(exc); code = 1
+                except (KeyError, TypeError, ValueError):
+                    message = '설정 또는 서버 응답 형식을 확인해주세요.'; code = 1
+                print(time.strftime('%Y-%m-%d %H:%M:%S'), '['+label+']', message, flush=True)
             if args.once:
                 return code
             time.sleep(config['poll_seconds'])
