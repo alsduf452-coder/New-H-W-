@@ -93,14 +93,17 @@ def work_history(hw,chamber,query=''):
         changes=[]
         for part,sn in record['parts'].items():
             before=state.get((record['chamber'],part),'미기재')
-            changes.append(f'{part}: {before} → {sn}')
+            changes.append((part,before,sn))
             state[(record['chamber'],part)]=sn
         events.append({**record,'changes':changes})
     for record in reversed(events):
         if chamber!='전체' and record['chamber']!=chamber:continue
         if query and query.casefold() not in str(record).casefold():continue
         body='<div class="classic-work"><div class="classic-badges"><span>'+escape(record['date'] or '일자 미기재')+'</span><span>Chamber '+escape(record['chamber'])+'</span><span>Excel 기록</span></div>'
-        body+='<p>'+escape('\n'.join(record['changes']))+'</p><p class="reason">사유: '+escape(record['reason'] or '—')+'</p><div class="footer">작업자: 원본에 기재 없음</div></div>'
+        body+='<table class="classic-change-table" aria-label="부품 교체 전후"><thead><tr><th>부품</th><th>교체 전</th><th>교체 후</th></tr></thead><tbody>'
+        for part,before,after in record['changes']:
+            body+='<tr>'+''.join('<td>'+escape(str(value))+'</td>' for value in (part,before,after))+'</tr>'
+        body+='</tbody></table><p class="reason">사유: '+escape(record['reason'] or '—')+'</p><div class="footer">작업자: 원본에 기재 없음</div></div>'
         st.markdown(body,unsafe_allow_html=True)
     if not events:st.info('작업 이력이 없습니다.')
 
