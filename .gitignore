@@ -18,3 +18,5 @@ local_sync/config.toml
 sync.env
 *.log
 login-secrets.generated.toml
+local_sync/token.dpapi
+local_sync/daily-state/
