@@ -95,14 +95,14 @@ def create_app(repository=None, token=None, source_id=None, mapping=None, source
             raise HTTPException(428, '현재 서버 revision을 If-Match로 전달해주세요.')
         size = request.headers.get('content-length')
         if size and (not size.isdecimal() or int(size) > MAX_FILE):
-            raise HTTPException(413, 'Excel은 20MB 이하여야 합니다.')
+            raise HTTPException(413, 'Excel은 50MB 이하여야 합니다.')
         if request.headers.get('content-type', '').split(';')[0] not in ('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'application/octet-stream'):
             raise HTTPException(415, '.xlsx 파일 본문을 전송해주세요.')
         content = bytearray()
         async for block in request.stream():
             content.extend(block)
             if len(content) > MAX_FILE:
-                raise HTTPException(413, 'Excel은 20MB 이하여야 합니다.')
+                raise HTTPException(413, 'Excel은 50MB 이하여야 합니다.')
         content = bytes(content)
         digest = hashlib.sha256(content).hexdigest()
         if request.headers.get('x-content-sha256') != digest:

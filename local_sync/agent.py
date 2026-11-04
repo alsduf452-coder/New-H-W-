@@ -10,7 +10,7 @@ import tomllib
 from urllib.parse import urlparse
 import requests
 
-MAX_FILE = 20 * 1024 * 1024
+MAX_FILE = 50 * 1024 * 1024
 
 
 class SyncError(ValueError):
@@ -57,7 +57,7 @@ def stable_read(path, settle_seconds=2):
     try:
         before = path.stat()
         if before.st_size > MAX_FILE:
-            raise SyncError('파일이 20MB를 초과합니다.')
+            raise SyncError('파일이 50MB를 초과합니다.')
         time.sleep(settle_seconds)
         settled = path.stat()
         signature = lambda s: (s.st_size, s.st_mtime_ns, s.st_ino)

@@ -9,11 +9,11 @@ from excel_sync import MAX_FILE, MAX_UNCOMPRESSED
 def workbook_view(content, config):
     """Preview visible sheets; map one explicitly configured sheet to Pending."""
     if len(content) > MAX_FILE:
-        raise ValidationError('Excel은 20MB 이하여야 합니다.')
+        raise ValidationError('Excel은 50MB 이하여야 합니다.')
     try:
         with ZipFile(BytesIO(content)) as archive:
             if sum(i.file_size for i in archive.infolist()) > MAX_UNCOMPRESSED:
-                raise ValidationError('압축 해제 크기가 40MB를 초과합니다.')
+                raise ValidationError('압축 해제 크기가 100MB를 초과합니다.')
         book = load_workbook(BytesIO(content), read_only=True, data_only=True)
     except (BadZipFile, OSError, KeyError):
         raise ValidationError('정상적인 .xlsx 파일이 아닙니다.') from None
