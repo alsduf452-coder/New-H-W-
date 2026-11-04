@@ -5,6 +5,7 @@ from datetime import datetime, date
 from pathlib import Path
 import requests
 from agent import load_config, sync_once, SyncError
+from sync_lock import sync_lock
 
 ROOT = Path(__file__).resolve().parent
 
@@ -21,7 +22,7 @@ def eligible(settings, now):
     return True, ''
 
 
-def run(root=ROOT, now=None, sync=sync_once):
+def _run(root=ROOT, now=None, sync=sync_once):
     now = now or datetime.now()
     state = root / 'daily-state'
     state.mkdir(exist_ok=True)
@@ -57,6 +58,11 @@ def run(root=ROOT, now=None, sync=sync_once):
             except (SyncError,OSError,ValueError,KeyError,TypeError):
                 log(label+' · 전송 실패 · 남은 파일 중단, 당일 재시도하지 않음');return 1
     log('예약 동기화 완료');return 0
+
+
+def run(root=ROOT, now=None, sync=sync_once):
+    with sync_lock(root) as locked:
+        return _run(root,now,sync) if locked else 0
 
 
 if __name__=='__main__':

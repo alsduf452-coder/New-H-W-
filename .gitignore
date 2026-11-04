@@ -20,3 +20,5 @@ sync.env
 login-secrets.generated.toml
 local_sync/token.dpapi
 local_sync/daily-state/
+
+local_sync/sync.lock

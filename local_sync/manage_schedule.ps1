@@ -1,6 +1,7 @@
 $ErrorActionPreference = 'Stop'
 Set-Location -LiteralPath $PSScriptRoot
 $taskName = 'HW-Excel-Classic-Daily-0900'
+$manualTask = 'HW-Excel-Classic-Manual-Requests'
 $settingsPath = Join-Path $PSScriptRoot 'schedule.json'
 function Save-Settings($settings) {
     $settings | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath $settingsPath -Encoding UTF8
@@ -9,7 +10,7 @@ if (!(Test-Path -LiteralPath $settingsPath)) {
     Save-Settings @{paused=$false;absence=@()}
 }
 while ($true) {
-    Write-Host "`n1. Register daily 09:00 task / save token"
+    Write-Host "`n1. Register 09:00 + manual request tasks / save token"
     Write-Host '2. Pause sync'
     Write-Host '3. Resume sync (absence dates still apply)'
     Write-Host '4. Add absence period (inclusive)'
@@ -34,11 +35,17 @@ while ($true) {
                 $options = New-ScheduledTaskSettingsSet -MultipleInstances IgnoreNew -ExecutionTimeLimit (New-TimeSpan -Minutes 20) -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries
                 # No StartWhenAvailable, WakeToRun, or RestartCount: no catch-up/retry.
                 Register-ScheduledTask -TaskName $taskName -Action $action -Trigger $trigger -Principal $principal -Settings $options -Force | Out-Null
-                Write-Host 'Registered: daily 09:00, current user logged in only. No wake/catch-up/retry.'
+                $manualAction = New-ScheduledTaskAction -Execute "$env:SystemRoot\System32\WindowsPowerShell\v1.0\powershell.exe" -Argument "-NoProfile -NonInteractive -ExecutionPolicy RemoteSigned -WindowStyle Hidden -File `"$PSScriptRoot\run_daily.ps1`" -Manual" -WorkingDirectory $PSScriptRoot
+                $manualTrigger = New-ScheduledTaskTrigger -Daily -At '00:00'
+                $repeat = New-ScheduledTaskTrigger -Once -At '00:00' -RepetitionInterval (New-TimeSpan -Minutes 1) -RepetitionDuration (New-TimeSpan -Days 1)
+                $manualTrigger.Repetition = $repeat.Repetition
+                Register-ScheduledTask -TaskName $manualTask -Action $manualAction -Trigger $manualTrigger -Principal $principal -Settings $options -Force | Out-Null
+                Write-Host 'Registered: 09:00 automatic sync + manual request check every minute.'
+                Write-Host 'Manual requests require login, network access, and no absence/pause.'
                 Write-Host 'Keep Windows time zone set to Korea. Stop any old start.bat watcher.'
             }
             '2' {$settings.paused=$true;Save-Settings $settings;Write-Host 'Paused.'}
-            '3' {$settings.paused=$false;Save-Settings $settings;Write-Host 'Resumed. Next eligible 09:00 only.'}
+            '3' {$settings.paused=$false;Save-Settings $settings;Write-Host 'Resumed. Next 09:00 automatic sync; manual request checks also resume.'}
             '4' {
                 $start = Read-Host 'First absent day (YYYY-MM-DD)'
                 $end = Read-Host 'Last absent day (YYYY-MM-DD)'
@@ -51,11 +58,11 @@ while ($true) {
             '5' {$settings.absence=@();Save-Settings $settings;Write-Host 'Absence periods cleared.'}
             '6' {
                 $settings | ConvertTo-Json -Depth 5 | Write-Host
-                Get-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue | Select-Object TaskName,State
-                Get-ScheduledTaskInfo -TaskName $taskName -ErrorAction SilentlyContinue | Select-Object LastRunTime,LastTaskResult,NextRunTime
+                Get-ScheduledTask -TaskName $taskName,$manualTask -ErrorAction SilentlyContinue | Select-Object TaskName,State | Format-Table | Out-Host
+                foreach ($name in @($taskName,$manualTask)) { Write-Host $name; Get-ScheduledTaskInfo -TaskName $name -ErrorAction SilentlyContinue | Select-Object LastRunTime,LastTaskResult,NextRunTime | Format-List | Out-Host }
                 Write-Host "Logs: $PSScriptRoot\daily-state"
             }
-            '7' {Unregister-ScheduledTask -TaskName $taskName -Confirm:$false;Write-Host 'Task removed. Files retained.'}
+            '7' {Unregister-ScheduledTask -TaskName $taskName,$manualTask -Confirm:$false -ErrorAction SilentlyContinue;Write-Host 'Task removed. Files retained.'}
             '0' {exit 0}
             default {Write-Host 'Choose 0 through 7.'}
         }

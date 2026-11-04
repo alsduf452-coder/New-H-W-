@@ -1,3 +1,4 @@
+param([switch]$Manual)
 $ErrorActionPreference = 'Stop'
 Set-Location -LiteralPath $PSScriptRoot
 try {
@@ -7,7 +8,8 @@ try {
     $pointer = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($secure)
     try { $env:LOCAL_SYNC_TOKEN = [Runtime.InteropServices.Marshal]::PtrToStringBSTR($pointer) }
     finally { [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($pointer) }
-    & "$PSScriptRoot\.venv\Scripts\python.exe" "$PSScriptRoot\daily_sync.py"
+    $script = if ($Manual) { "manual_sync.py" } else { "daily_sync.py" }
+    & "$PSScriptRoot\.venv\Scripts\python.exe" "$PSScriptRoot\$script"
     $result = $LASTEXITCODE
 } catch {
     # Do not log exception contents, tokens, or database credentials.

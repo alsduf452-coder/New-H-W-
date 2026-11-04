@@ -3,6 +3,7 @@ from datetime import datetime
 from zoneinfo import ZoneInfo
 import streamlit as st
 from classic_cloud.reader import SnapshotReader
+from sync_control import SyncControl
 from classic_cloud import model, views
 from classic_cloud.visuals import STYLE, cards
 from login_ui import require_local, guard_fragment
@@ -10,7 +11,7 @@ from login_ui import require_local, guard_fragment
 st.set_page_config(page_title='양산 설비 통합 관리 · Excel 연동', page_icon='🔷', layout='wide')
 st.markdown(STYLE,unsafe_allow_html=True)
 st.title('양산 설비 통합 관리')
-st.caption('CLASSIC-CLOUD-03 · Soft Slate · Excel 자동 연동 · 조회 전용')
+st.caption('CLASSIC-CLOUD-04 · Soft Slate · Excel 자동 연동 · 조회 전용')
 try:
     settings=dict(st.secrets)
 except FileNotFoundError:
@@ -53,7 +54,15 @@ with st.sidebar:
     st.markdown('**🔷 양산 설비 통합 관리**')
     st.caption('PECVD 설비 · Excel 연동 조회')
     page=cards('화면 선택',['PENDING 현황','PENDING List REV관리','설비 H/W 이력관리'],'classic_page')
-    if st.button('최신 데이터 새로고침',use_container_width=True):st.rerun()
+    if st.button('최신 데이터 새로고침',use_container_width=True):
+        if mode=='postgres':
+            try:
+                SyncControl(database.engine).request(actor)
+                st.session_state['manual_requested']=True
+            except Exception:
+                st.error('수동 동기화 요청을 등록하지 못했습니다. 새 수신 서버 배포와 DB 연결을 확인해주세요.')
+        else:st.info('샘플 화면에서는 PC 동기화를 요청하지 않습니다.')
+    st.caption('버튼을 누르면 PC에 Excel 동기화를 요청합니다. PC가 켜져 있고 예약 수신 기능이 등록되어 있어야 합니다.')
     st.caption('화면은 15초마다 수신 데이터를 확인합니다. 수정은 PC Excel에서 저장해주세요.')
 
 filters={};chamber='전체';section='설비 현황';flatness='Diffuser';query=''
@@ -87,6 +96,14 @@ def content():
         current=read_sources()
     except Exception:
         st.error('데이터 갱신에 실패했습니다. 잠시 후 다시 확인해주세요.');return
+    if mode=='postgres':
+        try:
+            request=SyncControl(database.engine).status()
+            labels={'pending':'PC 응답 대기 중 · 최대 5분','running':'PC에서 Excel 동기화 중','done':'수동 동기화 완료','failed':'수동 동기화 실패','blocked':'동기화 일시정지 또는 부재 기간','expired':'수동 요청 만료 · 자동 재시도하지 않음'}
+            if request:
+                st.info(labels.get(request.get('status'),'') + (' · '+request['summary'] if request.get('summary') else ''))
+        except Exception:
+            if st.session_state.get('manual_requested'):st.warning('수동 동기화 상태를 확인하지 못했습니다.')
     for label,snapshot in [('PENDING',current['pending']),(hw_unit+' H/W',current['hw'])]:
         state=snapshot.get('state',{})
         stamp=state.get('received_at')

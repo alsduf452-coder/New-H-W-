@@ -5,6 +5,15 @@ import json
 import os
 import re
 from fastapi import FastAPI, HTTPException, Request, Depends
+from pydantic import BaseModel, Field
+from typing import Literal
+from sync_control import SyncControl
+
+class ManualResult(BaseModel):
+    request_id: str = Field(min_length=32,max_length=32,pattern="^[a-f0-9]+$")
+    status: Literal["done","failed","blocked"]
+    summary: str = Field(default="",max_length=500)
+
 from starlette.concurrency import run_in_threadpool
 from cloud_store import Repository, ConflictError
 from domain import ValidationError, FIELDS
@@ -70,12 +79,23 @@ def create_app(repository=None, token=None, source_id=None, mapping=None, source
             repository = Repository(url)
         except Exception:
             raise RuntimeError('운영 DB 연결에 실패했습니다. DATABASE_URL과 접근 권한을 확인해주세요.') from None
+    control = SyncControl(repository.engine, initialize=True)
     app = FastAPI(title='Local Excel Sync', docs_url=None, redoc_url=None, openapi_url=None)
 
     def authorize(request: Request):
         supplied = request.headers.get('authorization', '')
         if not hmac.compare_digest(supplied.encode(), ('Bearer ' + token).encode()):
             raise HTTPException(401, '동기화 인증에 실패했습니다.')
+
+    @app.post('/v1/manual/claim', dependencies=[Depends(authorize)])
+    def claim_manual():
+        return {'request':control.claim()}
+
+    @app.post('/v1/manual/result', dependencies=[Depends(authorize)])
+    def finish_manual(result: ManualResult):
+        if not control.finish(result.request_id,result.status,result.summary):
+            raise HTTPException(409,'요청이 변경되었거나 이미 처리됐습니다.')
+        return {'ok':True}
 
     @app.get('/healthz')
     def health():
