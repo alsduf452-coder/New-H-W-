@@ -1,4 +1,5 @@
 from collections import Counter
+from hashlib import sha256
 from datetime import datetime
 from html import escape
 from zoneinfo import ZoneInfo
@@ -49,10 +50,15 @@ def pending(snapshot, filters):
     if selected and st.button('카드 선택 해제',key='classic_clear_drill'):
         st.session_state.classic_drill=None;st.rerun(scope='app')
     columns=['ID','설비','분야','상태','Unit','내용','담당자','목표일','시트']
-    st.dataframe(shown[columns],hide_index=True,use_container_width=True,height=380)
-    if not shown.empty:
-        identifier=st.selectbox('상세 항목 선택',shown['ID'].tolist(),format_func=lambda key:next(f"{r['설비']} · {r['분야']} · {r['내용'][:65]}" for r in shown.to_dict('records') if r['ID']==key),key='classic_pending_detail')
-        row=shown[shown['ID']==identifier].iloc[0]
+    st.caption('목록에서 원하는 행을 클릭하면 아래에 상세 내용이 표시됩니다.')
+    # Reset positional selection when filtering or incoming rows change order.
+    identity=sha256(shown['ID'].to_json(force_ascii=False).encode()).hexdigest()[:16]
+    selection=st.dataframe(shown[columns],hide_index=True,use_container_width=True,height=380,
+        key='classic_pending_rows_'+identity,on_select='rerun',selection_mode='single-row')
+    positions=selection.selection.rows
+    if positions and 0<=positions[0]<len(shown):
+        row=shown.iloc[positions[0]]
+        st.subheader('PENDING 상세')
         detail([(field,row[field]) for field in ['설비','분야','상태','Unit','내용','발생일','담당자','원인','진행 사항','목표일','조치내용','완료일','조치자','45호기 적용 여부']])
     downloads(shown,'Pending List',{'분야별 집계':model.summary(shown,'분야'),'설비별 집계':model.summary(shown,'설비')})
     warnings=snapshot.get('previews',{}).get('__pending_data__',{}).get('warnings',[])
