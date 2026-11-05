@@ -1,5 +1,6 @@
 """One scheduled attempt per local calendar day; never prompt or retry."""
 import json
+import time
 import os
 from datetime import datetime, date
 from pathlib import Path
@@ -61,8 +62,28 @@ def _run(root=ROOT, now=None, sync=sync_once):
 
 
 def run(root=ROOT, now=None, sync=sync_once):
-    with sync_lock(root) as locked:
-        return _run(root,now,sync) if locked else 0
+    started = now or datetime.now()
+    state = root/'daily-state'
+    state.mkdir(exist_ok=True)
+    def note(message):
+        with (state/(started.strftime('%Y-%m')+'.log')).open('a',encoding='utf-8') as f:
+            f.write(datetime.now().isoformat(timespec='seconds')+' 자동 · '+message+'\n')
+    note('예약 프로그램 시작')
+    deadline = time.monotonic()+180
+    waiting = False
+    while True:
+        with sync_lock(root) as locked:
+            if locked:
+                if waiting:note('다른 작업 종료 확인 · 자동 동기화 진행')
+                # Eligibility uses scheduled launch time, not time after lock waiting.
+                return _run(root,started,sync)
+        if not waiting:
+            note('다른 동기화 작업 실행 중 · 최대 3분 대기')
+            waiting=True
+        if time.monotonic()>=deadline:
+            note('대기 시간 초과로 건너뜀 · 당일 자동 재시도 없음')
+            return 1
+        time.sleep(2)
 
 
 if __name__=='__main__':

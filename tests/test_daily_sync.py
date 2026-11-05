@@ -50,3 +50,30 @@ def test_bad_settings_and_missing_token_never_transmit(tmp_path,monkeypatch):
     assert run(tmp_path,datetime(2026,11,4,9),forbidden)==1
     (tmp_path/'schedule.json').write_text('bad')
     assert run(tmp_path,datetime(2026,11,5,9),forbidden)==1
+
+
+def test_automatic_waits_for_manual_lock_then_runs(tmp_path,monkeypatch):
+    import daily_sync
+    from contextlib import contextmanager
+    setup(tmp_path);monkeypatch.setenv('LOCAL_SYNC_TOKEN','x'*43)
+    locks=iter([False,True])
+    @contextmanager
+    def lock(root):yield next(locks)
+    monkeypatch.setattr(daily_sync,'sync_lock',lock)
+    monkeypatch.setattr(daily_sync.time,'sleep',lambda seconds:None)
+    calls=[]
+    assert run(tmp_path,datetime(2026,11,5,9,0,1),lambda *args:calls.append(1) or '완료')==0
+    assert len(calls)==3
+    assert (tmp_path/'daily-state'/'2026-11-05.attempt').exists()
+
+
+def test_automatic_lock_timeout_is_logged(tmp_path,monkeypatch):
+    import daily_sync
+    from contextlib import contextmanager
+    setup(tmp_path)
+    @contextmanager
+    def lock(root):yield False
+    monkeypatch.setattr(daily_sync,'sync_lock',lock)
+    clock=iter([0,181]);monkeypatch.setattr(daily_sync.time,'monotonic',lambda:next(clock))
+    assert run(tmp_path,datetime(2026,11,5,9))==1
+    assert '대기 시간 초과' in (tmp_path/'daily-state'/'2026-11.log').read_text()
