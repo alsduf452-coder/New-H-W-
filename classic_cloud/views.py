@@ -85,10 +85,14 @@ def revisions(snapshot):
     for term in query.split():
         if records.empty:break
         records=records[records.astype(str).agg(' '.join,axis=1).str.contains(term,case=False,regex=False)]
-    st.dataframe(records,hide_index=True,use_container_width=True,height=380)
-    if not records.empty:
-        index=st.selectbox('REV 상세 선택',records.index.tolist(),format_func=lambda i:f"REV {records.loc[i,'REV']} · {records.loc[i,'변경일자']}",key='classic_rev_selection')
-        detail(list(records.loc[index].items()))
+    st.caption('목록에서 원하는 행을 클릭하면 아래에 REV 상세 내용이 표시됩니다.')
+    identity=sha256(records.to_json(force_ascii=False,orient='split').encode()).hexdigest()[:16]
+    selection=st.dataframe(records,hide_index=True,use_container_width=True,height=380,
+        key='classic_rev_rows_'+identity,on_select='rerun',selection_mode='single-row')
+    positions=selection.selection.rows
+    if positions and 0<=positions[0]<len(records):
+        st.subheader('REV 상세')
+        detail(list(records.iloc[positions[0]].items()))
     downloads(records,'REV 이력')
 
 
