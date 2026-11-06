@@ -86,7 +86,7 @@ def check_response(response):
         raise SyncError('수신 서버 주소와 응답을 확인해주세요.') from None
 
 
-def sync_once(config, token, session=None, settle_seconds=2):
+def _sync_once(config, token, session=None, settle_seconds=2):
     session = session or requests.Session()
     headers = {'Authorization': 'Bearer ' + token}
     if config.get('source_id'):
@@ -111,6 +111,36 @@ def sync_once(config, token, session=None, settle_seconds=2):
     except requests.RequestException:
         raise SyncError('서버에 연결하지 못했습니다. 인터넷·서버 주소·인증서를 확인해주세요. 다음 확인 시 재시도합니다.') from None
 
+
+def resolve_excel(path):
+    """Only '*' in the basename is a wildcard; never search other folders."""
+    import re
+    path = Path(path)
+    if '*' in str(path.parent):
+        raise SyncError('폴더 경로에는 *를 사용할 수 없습니다. 파일명 날짜 부분에만 넣어주세요.')
+    if '*' not in path.name:
+        return path
+    pattern = re.compile(re.escape(path.name).replace(r'\*', '.*'), re.IGNORECASE)
+    try:
+        candidates = [(p.stat().st_mtime_ns, p) for p in path.parent.iterdir()
+                      if not p.name.startswith('~$') and p.is_file()
+                      and p.suffix.lower() == '.xlsx' and pattern.fullmatch(p.name)]
+    except OSError:
+        raise SyncError('Excel 폴더에 접근할 수 없습니다. 공유드라이브 연결과 권한을 확인해주세요.') from None
+    if not candidates:
+        raise SyncError('파일명 패턴에 맞는 Excel이 없습니다. 폴더와 파일명 규칙을 확인해주세요.')
+    latest = max(stamp for stamp, _ in candidates)
+    matches = [p for stamp, p in candidates if stamp == latest]
+    if len(matches) != 1:
+        raise SyncError('최근 수정 시각이 같은 Excel이 여러 개입니다. 파일명 패턴을 좁히거나 파일을 정리해주세요.')
+    return matches[0]
+
+
+def sync_once(config, token, session=None, settle_seconds=2):
+    configured = Path(config['excel_path'])
+    selected = resolve_excel(configured)
+    message = _sync_once({**config, 'excel_path': selected}, token, session, settle_seconds)
+    return f'[{selected.name}] {message}' if '*' in configured.name else message
 
 def main():
     parser = argparse.ArgumentParser()
