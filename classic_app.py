@@ -54,7 +54,7 @@ with st.sidebar:
     st.markdown('**🔷 양산 설비 통합 관리**')
     st.caption('PECVD 설비 · Excel 연동 조회')
     page=cards('화면 선택',['PENDING 현황','PENDING List REV관리','설비 H/W 이력관리'],'classic_page')
-    if st.button('최신 데이터 새로고침',use_container_width=True):
+    if st.button('Excel 동기화 요청',use_container_width=True):
         if mode=='postgres':
             try:
                 SyncControl(database.engine).request(actor)
