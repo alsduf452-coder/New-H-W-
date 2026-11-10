@@ -5,7 +5,7 @@ import json
 import pandas as pd
 import streamlit as st
 from hw86_excel import delta
-from classic_cloud.visuals import cards
+from classic_cloud.visuals import cards, measurement_table, diagram_svg, spacing_table_html, number
 from classic_cloud.model import workbook_export
 
 
@@ -18,6 +18,40 @@ def grid_table(grid,title):
 
 def label(record):
     return (record['date'] or '날짜 확인 필요')+' · '+record['title'].splitlines()[0]+' · '+record['cell']
+
+
+def spacing_grid(grid):
+    """Compact only the standard nine physical positions; retain unusual points."""
+    positions={(r,c) for r in (0,2,4) for c in (0,3,6)}
+    if len(grid)!=5 or any(len(row)!=7 for row in grid):return None
+    if any(v is not None and (r,c) not in positions for r,row in enumerate(grid) for c,v in enumerate(row)):return None
+    return [[grid[r][c] for c in (0,3,6)] for r in (0,2,4)]
+
+
+def measurement_detail(record):
+    kind=record['kind'];grid=record['grid'];spacing=kind=='Spacing'
+    compact=spacing_grid(grid) if spacing else None
+    left,right=st.columns(2)
+    left.subheader(kind+' 실측 데이터')
+    right.subheader(kind+' 측정 위치도')
+    if spacing and compact is not None:
+        for panel in (left,right):panel.caption('▲ G/V 측: ①⑥② / 중앙: ⑨⑤⑦ / ▼ Window 측: ④⑧③')
+        left.markdown(spacing_table_html(compact),unsafe_allow_html=True)
+        right.markdown(diagram_svg(compact,True),unsafe_allow_html=True)
+    else:
+        left.markdown(measurement_table(grid),unsafe_allow_html=True)
+        drawing=diagram_svg(grid)
+        if spacing:
+            # Sparse nonstandard points retain their Excel row/column coordinates.
+            drawing=drawing.replace('G/V · Col 1','원본 Row 1 → '+str(len(grid))).replace('Window · Col 7','원본 Col 1 → '+str(len(grid[0])))
+            for panel in (left,right):panel.caption('비정형 측정 배치 · 원본 행·열 위치 유지 · 빈칸은 미측정')
+        right.markdown(drawing,unsafe_allow_html=True)
+    summary=record['stats']
+    center='Center (⑤)' if spacing and compact is not None else f'Center (R{len(grid)//2+1}C{len(grid[0])//2+1})'
+    total=9 if spacing and compact is not None else len(grid)*len(grid[0])
+    st.dataframe([{'최소값':number(summary['min']),'최대값':number(summary['max']),
+        'Max−Min':number(summary['range']),center:number(summary['center']),
+        '측정 개수':f"{summary['count']}/{total}"}],hide_index=True,use_container_width=True)
 
 
 def hardware(snapshot):
@@ -48,7 +82,8 @@ def hardware(snapshot):
     st.write(current['title'])
     if current['notes']:st.write(current['notes'])
     st.caption('원본: '+current['sheet']+'!'+current['cell'])
-    grid_table(current['grid'],'당시 Susceptor Flatness' if kind=='Shim 변경이력' else kind)
+    if kind=='Shim 변경이력':grid_table(current['grid'],'당시 Susceptor Flatness')
+    else:measurement_detail(current)
     for note in current['cell_notes']:st.caption(note)
     if kind=='Shim 변경이력':
         grid_table(current['shim'],'위치별 Shim 두께 · Excel 배치')

@@ -105,3 +105,23 @@ hardware(SNAPSHOT)
     next(b for b in app.button if b.label=='Shim 변경이력').click().run();assert not app.exception
     app.checkbox[0].check().run();assert not app.exception
     assert any('Shim 두께 변화량' in m.value for m in app.markdown)
+
+
+def test_standard_spacing_positions_and_nonstandard_points():
+    from classic_cloud.hw86_views import spacing_grid
+    g=[[None]*7 for _ in range(5)]
+    for r in (0,2,4):
+        for c in (0,3,6):g[r][c]=r*7+c
+    assert spacing_grid(g)==[[0,3,6],[14,17,20],[28,31,34]]
+    g[1][2]=873.9
+    assert spacing_grid(g) is None
+
+
+def test_measurement_detail_two_panels():
+    from streamlit.testing.v1 import AppTest
+    data=parse_hw86(fixture())['measurements'][0]
+    script='from classic_cloud.hw86_views import measurement_detail\nmeasurement_detail('+repr(data)+')'
+    app=AppTest.from_string(script).run()
+    assert not app.exception
+    assert [s.value for s in app.subheader]==['Diffuser Flatness 실측 데이터','Diffuser Flatness 측정 위치도']
+    assert any('<svg' in m.value for m in app.markdown)
