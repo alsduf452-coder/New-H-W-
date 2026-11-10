@@ -17,7 +17,14 @@ try:
 except FileNotFoundError:
     settings={}
 mode=settings.get('storage',{}).get('mode','demo')
-hw_unit=st.sidebar.selectbox('H/W 설비',['45호기','15호기'],key='classic_hw_unit')
+with st.sidebar:
+    generation=cards('설비 세대',['6G','8G'],'classic_generation',True)
+    if generation=='6G':
+        hw_unit=st.selectbox('H/W 설비',['45호기','15호기'],key='classic_hw_unit')
+    else:
+        hw_unit=None
+        st.info('8G 설비 등록 준비 중')
+    st.caption('세대·설비 선택은 H/W 조회에 적용됩니다. PENDING은 통합 목록입니다.')
 
 @st.cache_resource
 def reader(url):
@@ -28,7 +35,7 @@ if mode=='demo':
     from classic_cloud.sample import snapshots
     def read_sources():
         data=snapshots()
-        if hw_unit=='15호기':data['hw']={'revision':0,'state':{},'previews':{}}
+        if hw_unit!='45호기':data['hw']={'revision':0,'state':{},'previews':{}}
         return data
 elif mode=='postgres':
     if settings.get('login',{}).get('method')!='password':
@@ -41,7 +48,11 @@ elif mode=='postgres':
         st.error('운영 DB 설정을 확인해주세요. Render PostgreSQL의 External Database URL이 필요합니다.');st.stop()
     config=settings.get('local_excel',{})
     def read_sources():
-        return {'hw':database.read(config.get('source_id','local-excel') if hw_unit=='45호기' else config.get('hw15_source_id','hw-15')),'pending':database.read(config.get('pending_source_id','pending-excel'))}
+        hw={'revision':0,'state':{},'previews':{}}
+        if generation=='6G':
+            source_id=config.get('source_id','local-excel') if hw_unit=='45호기' else config.get('hw15_source_id','hw-15')
+            hw=database.read(source_id)
+        return {'hw':hw,'pending':database.read(config.get('pending_source_id','pending-excel'))}
 else:
     st.error('저장 모드 설정을 확인해주세요.');st.stop()
 
@@ -81,7 +92,7 @@ if page=='PENDING 현황':
     if st.session_state.get('classic_filter_signature')!=signature:
         st.session_state.classic_drill=None
         st.session_state.classic_filter_signature=signature
-elif page=='설비 H/W 이력관리':
+elif page=='설비 H/W 이력관리' and generation=='6G':
     with st.sidebar:
         st.subheader('H/W 조회 필터')
         chamber=st.selectbox('H/W 챔버',['전체','A','B','C','D','E'],key='classic_chamber')
@@ -104,7 +115,9 @@ def content():
                 st.info(labels.get(request.get('status'),'') + (' · '+request['summary'] if request.get('summary') else ''))
         except Exception:
             if st.session_state.get('manual_requested'):st.warning('수동 동기화 상태를 확인하지 못했습니다.')
-    for label,snapshot in [('PENDING',current['pending']),(hw_unit+' H/W',current['hw'])]:
+    received=[('PENDING',current['pending'])]
+    if generation=='6G':received.append((generation+' · '+hw_unit+' H/W',current['hw']))
+    for label,snapshot in received:
         state=snapshot.get('state',{})
         stamp=state.get('received_at')
         if stamp:
@@ -117,6 +130,9 @@ def content():
             st.warning('기존 앱 DB 반영에 충돌이 있습니다. 새 앱은 가장 최근 수신한 Excel 스냅샷을 표시합니다. 기존 앱의 충돌 내역을 별도로 확인해주세요.')
     if page=='PENDING 현황':views.pending(current['pending'],filters)
     elif page=='PENDING List REV관리':views.revisions(current['pending'])
-    else:views.hardware(current['hw'],chamber,section,flatness,query,hw_unit)
+    elif generation=='8G':
+        st.header('8G · H/W 이력관리')
+        st.info('8G 설비 등록 준비 중')
+    else:views.hardware(current['hw'],chamber,section,flatness,query,generation+' · '+hw_unit)
 
 content()
