@@ -50,6 +50,7 @@ def run(root=ROOT,now=None,sync=sync_once,session_factory=requests.Session):
                     jobs=[('45호기',config)]
                     if config.get('pending_excel_path'):jobs.append(('PENDING',{**config,'excel_path':config['pending_excel_path'],'source_id':config['pending_source_id']}))
                     if config.get('hw15_excel_path'):jobs.append(('15호기',{**config,'excel_path':config['hw15_excel_path'],'source_id':config['hw15_source_id']}))
+                    if config.get('pending8_excel_path'):jobs.append(('8G PENDING',{**config,'excel_path':config['pending8_excel_path'],'source_id':config['pending8_source_id']}))
                     for label,job in jobs:
                         try:
                             message=sync(job,token,session)
@@ -67,3 +68,4 @@ def run(root=ROOT,now=None,sync=sync_once,session_factory=requests.Session):
 
 
 if __name__=='__main__':raise SystemExit(run())
+

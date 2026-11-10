@@ -23,8 +23,13 @@ with st.sidebar:
         hw_unit=st.selectbox('H/W 설비',['45호기','15호기'],key='classic_hw_unit')
     else:
         hw_unit=None
-        st.info('8G 설비 등록 준비 중')
-    st.caption('세대·설비 선택은 H/W 조회에 적용됩니다. PENDING은 통합 목록입니다.')
+        st.info('8G H/W 설비 등록 준비 중')
+    st.caption('PENDING은 선택한 세대의 파일을 조회합니다. H/W 설비 선택은 H/W 조회에 적용됩니다.')
+
+if st.session_state.get('classic_previous_generation')!=generation:
+    for key in ['classic_equipment','classic_fields','classic_states','classic_search','classic_scope','classic_drill','classic_filter_signature','classic_rev_query']:
+        st.session_state.pop(key,None)
+    st.session_state['classic_previous_generation']=generation
 
 @st.cache_resource
 def reader(url):
@@ -36,6 +41,7 @@ if mode=='demo':
     def read_sources():
         data=snapshots()
         if hw_unit!='45호기':data['hw']={'revision':0,'state':{},'previews':{}}
+        if generation=='8G':data['pending']={'revision':0,'state':{},'previews':{}}
         return data
 elif mode=='postgres':
     if settings.get('login',{}).get('method')!='password':
@@ -52,7 +58,10 @@ elif mode=='postgres':
         if generation=='6G':
             source_id=config.get('source_id','local-excel') if hw_unit=='45호기' else config.get('hw15_source_id','hw-15')
             hw=database.read(source_id)
-        return {'hw':hw,'pending':database.read(config.get('pending_source_id','pending-excel'))}
+        pending_source=config.get('pending_source_id','pending-excel') if generation=='6G' else config.get('pending8_source_id','pending-8g')
+        if generation=='8G' and pending_source==config.get('pending_source_id','pending-excel'):
+            raise ValueError('6G/8G PENDING 소스 ID가 중복됩니다.')
+        return {'hw':hw,'pending':database.read(pending_source)}
 else:
     st.error('저장 모드 설정을 확인해주세요.');st.stop()
 
@@ -81,7 +90,7 @@ if page=='PENDING 현황':
     all_rows=model.pending_frame(initial['pending'])
     with st.sidebar:
         st.subheader('PENDING 현황 필터')
-        scope=cards('조회 범위',['주요 5개 분야','보조 시트','전체 시트'],'classic_scope')
+        scope=cards('조회 범위',['주요 5개 분야','보조 시트','전체 시트'],'classic_scope') if generation=='6G' else '주요 항목'
         frame=all_rows if scope=='전체 시트' else all_rows[all_rows['범위']==scope]
         equipment=st.multiselect('설비',sorted(frame['설비'].unique()),key='classic_equipment')
         categories=st.multiselect('분야',sorted(frame['분야'].unique()),key='classic_fields')
@@ -115,7 +124,7 @@ def content():
                 st.info(labels.get(request.get('status'),'') + (' · '+request['summary'] if request.get('summary') else ''))
         except Exception:
             if st.session_state.get('manual_requested'):st.warning('수동 동기화 상태를 확인하지 못했습니다.')
-    received=[('PENDING',current['pending'])]
+    received=[(generation+' PENDING',current['pending'])]
     if generation=='6G':received.append((generation+' · '+hw_unit+' H/W',current['hw']))
     for label,snapshot in received:
         state=snapshot.get('state',{})
@@ -128,11 +137,12 @@ def content():
         if state.get('warning'):st.warning(label+': '+state['warning'])
         if state.get('pending_status')=='conflict':
             st.warning('기존 앱 DB 반영에 충돌이 있습니다. 새 앱은 가장 최근 수신한 Excel 스냅샷을 표시합니다. 기존 앱의 충돌 내역을 별도로 확인해주세요.')
-    if page=='PENDING 현황':views.pending(current['pending'],filters)
-    elif page=='PENDING List REV관리':views.revisions(current['pending'])
+    if page=='PENDING 현황':views.pending(current['pending'],filters,generation)
+    elif page=='PENDING List REV관리':views.revisions(current['pending'],generation)
     elif generation=='8G':
         st.header('8G · H/W 이력관리')
-        st.info('8G 설비 등록 준비 중')
+        st.info('8G H/W 설비 등록 준비 중')
     else:views.hardware(current['hw'],chamber,section,flatness,query,generation+' · '+hw_unit)
 
 content()
+

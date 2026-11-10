@@ -8,3 +8,8 @@ poll_seconds = 30
 # PENDING 파일도 연결할 때 아래 줄을 추가/활성화합니다.
 # pending_excel_path = 'C:\EquipmentData\Pending_List.xlsx'
 # pending_source_id = 'pending-excel'
+
+
+# 8G CPO PENDING: 파일명 패턴이 일치하는 파일 중 최근 수정 파일을 선택합니다.
+# pending8_excel_path = 'C:\EquipmentData\A6_BP_04_정리_CPO_Qual_Pending_List_v*_*.xlsx'
+# pending8_source_id = 'pending-8g'

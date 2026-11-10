@@ -50,6 +50,15 @@ def load_config(path):
         if not isinstance(source15, str) or not re.fullmatch(r'[A-Za-z0-9_-]{1,80}', source15) or source15 in ('local-excel', result.get('pending_source_id')):
             raise SyncError('15호기 소스 ID가 중복되거나 올바르지 않습니다.')
         result.update(hw15_excel_path=path15, hw15_source_id=source15)
+    extra8 = config.get('pending8_excel_path', '')
+    if extra8:
+        path8 = Path(extra8).expanduser()
+        if not path8.is_absolute() or path8.suffix.lower() != '.xlsx' or path8.name.startswith('~$') or path8 in (excel, result.get('pending_excel_path'), result.get('hw15_excel_path')):
+            raise SyncError('pending8_excel_path는 다른 파일과 구분되는 .xlsx 절대 경로여야 합니다.')
+        source8 = config.get('pending8_source_id', 'pending-8g')
+        if not isinstance(source8, str) or not re.fullmatch(r'[A-Za-z0-9_-]{1,80}', source8) or source8 in ('local-excel', result.get('pending_source_id'), result.get('hw15_source_id')):
+            raise SyncError('8G PENDING 소스 ID가 중복되거나 올바르지 않습니다.')
+        result.update(pending8_excel_path=path8, pending8_source_id=source8)
     return result
 
 
@@ -96,12 +105,14 @@ def _sync_once(config, token, session=None, settle_seconds=2):
         content = stable_read(config['excel_path'], settle_seconds)
         digest = hashlib.sha256(content).hexdigest()
         if status.get('file_hash') == digest and not status.get('resend_required'):
-            return 'H/W 변경 없음' if status.get('mode') == 'hw' else '변경 없음' if status.get('pending_status') == 'applied' else '시트 전송 완료 · PENDING 열 연결 설정 필요'
+            return 'H/W 변경 없음' if status.get('mode') == 'hw' else '변경 없음' if status.get('pending_status') == 'applied' or status.get('mode') == 'pending_cpo' else '시트 전송 완료 · PENDING 열 연결 설정 필요'
         headers.update({'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'If-Match': str(status['revision']), 'X-Content-SHA256': digest})
         response = session.post(config['server_url'] + '/v1/source/workbook', headers=headers, data=content, timeout=(10, 120), allow_redirects=False)
         result = check_response(response)
         if result.get('mode') == 'hw':
             return f"H/W 전송 완료 · 측정 기록 {result.get('hw_records', 0)}건 반영"
+        if result.get('mode') == 'pending_cpo':
+            return f"8G PENDING 전송 완료 · {result.get('pending_records', 0)}건 반영"
         state = result.get('pending_status')
         if state == 'conflict':
             return '시트 전송 완료 · PENDING 충돌로 반영 보류 (앱에서 확인)'
@@ -161,6 +172,8 @@ def main():
         jobs.append(('PENDING', {**config, 'excel_path':config['pending_excel_path'], 'source_id':config['pending_source_id']}))
     if config.get('hw15_excel_path'):
         jobs.append(('15호기 H/W', {**config, 'excel_path':config['hw15_excel_path'], 'source_id':config['hw15_source_id']}))
+    if config.get('pending8_excel_path'):
+        jobs.append(('8G PENDING', {**config, 'excel_path':config['pending8_excel_path'], 'source_id':config['pending8_source_id']}))
     with requests.Session() as session:
         while True:
             code = 0
@@ -182,3 +195,4 @@ if __name__ == '__main__':
         raise SystemExit(main())
     except KeyboardInterrupt:
         print('\n동기화를 종료했습니다.')
+

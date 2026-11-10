@@ -21,6 +21,7 @@ from excel_sync import MAX_FILE
 from workbook_mapping import workbook_view
 from hw_excel import parse_hw, SCHEMA_VERSION
 from pending_octa import parse_pending, SCHEMA_VERSION as PENDING_SCHEMA
+from pending_cpo import parse_cpo, SCHEMA_VERSION as CPO_SCHEMA
 
 
 def load_mapping(raw):
@@ -28,7 +29,7 @@ def load_mapping(raw):
         mapping = json.loads(raw or '{}')
         if not isinstance(mapping, dict):
             raise ValueError()
-        if mapping.get('mode', 'pending') not in ('pending', 'hw', 'pending_octa'):
+        if mapping.get('mode', 'pending') not in ('pending', 'hw', 'pending_octa', 'pending_cpo'):
             raise ValueError()
         if not isinstance(mapping.get('pending_sheet', 'PENDING'), str):
             raise ValueError()
@@ -68,7 +69,9 @@ def create_app(repository=None, token=None, source_id=None, mapping=None, source
         if selected not in configurations:
             raise HTTPException(404, '등록되지 않은 Excel 소스입니다.')
         config = configurations[selected]
-        version = hashlib.sha256(json.dumps({'mapping': config, 'hw_parser': SCHEMA_VERSION, 'pending_parser': PENDING_SCHEMA}, sort_keys=True).encode()).hexdigest()
+        versions = {'mapping': config, 'hw_parser': SCHEMA_VERSION, 'pending_parser': PENDING_SCHEMA}
+        if config.get('mode') == 'pending_cpo':versions['cpo_parser'] = CPO_SCHEMA
+        version = hashlib.sha256(json.dumps(versions, sort_keys=True).encode()).hexdigest()
         return selected, config, version
 
     if repository is None:
@@ -133,6 +136,8 @@ def create_app(repository=None, token=None, source_id=None, mapping=None, source
             pending_info = None
             if mapping.get('mode') == 'pending_octa':
                 pending, pending_info = await run_in_threadpool(parse_pending, content, source_id)
+            elif mapping.get('mode') == 'pending_cpo':
+                pending_info = await run_in_threadpool(parse_cpo, content, source_id)
         except ValidationError as exc:
             raise HTTPException(422, str(exc)) from None
         except Exception:
@@ -145,7 +150,7 @@ def create_app(repository=None, token=None, source_id=None, mapping=None, source
             previews['__hw_data__'] = hw
         if pending_info is not None:
             previews['__pending_data__'] = pending_info
-        state = {'pending_records':len(pending) if pending is not None else 0, 'pending_warnings':len(pending_info['warnings']) if pending_info else 0, 'mode': mapping.get('mode', 'pending'), 'hw_records': len(hw['measurements']) if hw else 0, 'file_hash': digest, 'mapping_hash': mapping_hash, 'warning': warning, 'sheet_names': [name for name in previews if not name.startswith('__')]}
+        state = {'pending_records':pending_info['count'] if pending_info else len(pending) if pending is not None else 0, 'pending_warnings':len(pending_info['warnings']) if pending_info else 0, 'mode': mapping.get('mode', 'pending'), 'hw_records': len(hw['measurements']) if hw else 0, 'file_hash': digest, 'mapping_hash': mapping_hash, 'warning': warning, 'sheet_names': [name for name in previews if not name.startswith('__')]}
         try:
             result = await run_in_threadpool(repository.ingest_local, source_id, int(raw_revision), state, previews, pending)
         except ConflictError as exc:
@@ -157,3 +162,4 @@ def create_app(repository=None, token=None, source_id=None, mapping=None, source
         return result
 
     return app
+

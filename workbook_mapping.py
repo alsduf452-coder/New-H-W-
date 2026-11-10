@@ -29,7 +29,7 @@ def workbook_view(content, config):
             values = list(sheet.iter_rows(min_row=1, max_row=min(sheet.max_row or 1, limit), max_col=min(sheet.max_column or 1, 50), values_only=True))
             budget -= sum(len(r) for r in values)
             previews[sheet.title] = {'rows': values, 'truncated': (sheet.max_row or 0) > limit or (sheet.max_column or 0) > 50}
-        if config.get('mode') in ('hw', 'pending_octa'):
+        if config.get('mode') in ('hw', 'pending_octa', 'pending_cpo'):
             return previews, None, None
         name = config.get('pending_sheet', 'PENDING')
         if name not in book.sheetnames:
@@ -99,3 +99,4 @@ def source_plan(current, previous, incoming):
             plan['changes'].append({'id': identifier, 'after': row, 'expected_version': old['버전'] if old else 0})
     plan['missing'] = [r for r in previous if r['ID'] not in {v['ID'] for v in incoming}]
     return plan
+

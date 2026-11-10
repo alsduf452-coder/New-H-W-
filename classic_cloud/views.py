@@ -15,8 +15,8 @@ def downloads(frame,name,extra=None):
     st.download_button('조회 결과 Excel 다운로드',model.workbook_export({name:frame,**(extra or {})}),name+'.xlsx',mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',key='classic_download_'+name)
 
 
-def pending(snapshot, filters):
-    st.header('PENDING 현황')
+def pending(snapshot, filters, generation=''):
+    st.header((generation+' · ' if generation else '')+'PENDING 현황')
     if not snapshot.get('revision'):
         st.info('PENDING 파일 수신을 기다리고 있습니다. 기존 동기화 프로그램에서 PENDING 전송 결과를 확인해주세요.');return
     frame=model.pending_frame(snapshot)
@@ -49,7 +49,11 @@ def pending(snapshot, filters):
     st.subheader('Pending List'+(' · '+selected if selected else ''))
     if selected and st.button('카드 선택 해제',key='classic_clear_drill'):
         st.session_state.classic_drill=None;st.rerun(scope='app')
+    cpo=snapshot.get('previews',{}).get('__pending_data__',{}).get('schema','').startswith('pending-cpo-')
     columns=['ID','설비','분야','상태','Unit','내용','담당자','목표일','시트']
+    if cpo:
+        columns=['ID','설비','분야','상태','개선 Item','원본 상태','진척도','목표일']
+        st.caption('완료 집계: 완료·고객 전달 완료 / 그 외 상태는 미완료 · 원본 상태와 진척도는 그대로 표시합니다.')
     st.caption('목록에서 원하는 행을 클릭하면 아래에 상세 내용이 표시됩니다.')
     # Reset positional selection when filtering or incoming rows change order.
     identity=sha256(shown['ID'].to_json(force_ascii=False).encode()).hexdigest()[:16]
@@ -59,17 +63,18 @@ def pending(snapshot, filters):
     if positions and 0<=positions[0]<len(shown):
         row=shown.iloc[positions[0]]
         st.subheader('PENDING 상세')
-        detail([(field,row[field]) for field in ['설비','분야','상태','Unit','내용','발생일','담당자','원인','진행 사항','목표일','조치내용','완료일','조치자','45호기 적용 여부']])
+        fields=['설비','분야','상태','개선 Item','상세 내용','원본 상태','진척도','진행 사항','목표일','완료일','비고','관련 메모'] if cpo else ['설비','분야','상태','Unit','내용','발생일','담당자','원인','진행 사항','목표일','조치내용','완료일','조치자','45호기 적용 여부']
+        detail([(field,row[field]) for field in fields])
     downloads(shown,'Pending List',{'분야별 집계':model.summary(shown,'분야'),'설비별 집계':model.summary(shown,'설비')})
     warnings=snapshot.get('previews',{}).get('__pending_data__',{}).get('warnings',[])
     if warnings:
         with st.expander(f'목표일 확인 필요 · {len(warnings)}건'):
             st.dataframe(warnings,hide_index=True,use_container_width=True)
-    if filters['scope']!='주요 5개 분야':st.caption('보조 시트는 주요 분야와 중복될 수 있습니다. 일부 원본 시트가 잘린 경우 수신된 미리보기 범위만 조회됩니다.')
+    if not cpo and filters['scope']!='주요 5개 분야':st.caption('보조 시트는 주요 분야와 중복될 수 있습니다. 일부 원본 시트가 잘린 경우 수신된 미리보기 범위만 조회됩니다.')
 
 
-def revisions(snapshot):
-    st.header('PENDING List REV관리')
+def revisions(snapshot, generation=''):
+    st.header((generation+' · ' if generation else '')+'PENDING List REV관리')
     rev=model.revision(snapshot)
     if not rev['history'] and not rev['summary']:
         st.info('수신한 PENDING 파일에 REV 관리 정보가 없습니다.');return
@@ -222,3 +227,4 @@ def hardware(snapshot,chamber,section,flatness,query,equipment_name):
             tables[kind]=pd.DataFrame(records)
         st.download_button('H/W 전체 Excel 다운로드',model.workbook_export(tables),'HW_History.xlsx',mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
         st.caption('읽기 전용 앱입니다. 데이터 변경·백업 파일 복원·삭제는 제공하지 않습니다. Excel 원본과 서버 백업에서 관리해주세요.')
+

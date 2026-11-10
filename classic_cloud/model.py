@@ -7,7 +7,7 @@ from openpyxl.styles import Alignment, Font, PatternFill
 from pending_octa import target_date
 
 MAIN = ['HW(설계)','공정','SW','전장','기타']
-COLS = ['ID','범위','설비','분야','상태','Unit','내용','담당자','목표일','발생일','원인','진행 사항','조치내용','완료일','조치자','45호기 적용 여부','시트']
+COLS = ['ID','범위','설비','분야','상태','Unit','내용','담당자','목표일','발생일','원인','진행 사항','조치내용','완료일','조치자','45호기 적용 여부','시트','개선 Item','상세 내용','원본 상태','진척도','비고','관련 메모']
 
 
 def text(value):
@@ -19,7 +19,7 @@ def pending_frame(snapshot):
     details = previews.get('__pending_data__',{}).get('details',[])
     rows=[]
     for detail in details:
-        rows.append({'ID':detail['ID'],'범위':'주요 5개 분야','설비':text(detail.get('호기')) or '미기재','분야':detail.get('시트',''),'상태':'완료' if text(detail.get('완료여부')).upper() in ('O','○','완료') else '미완료','Unit':text(detail.get('Unit명')),'내용':text(detail.get('불합리 및 이슈 내용')),'담당자':text(detail.get('담당자')),'목표일':text(detail.get('목표일 원문')),'발생일':text(detail.get('발생일')),'원인':text(detail.get('사유 or 원인')),'진행 사항':text(detail.get('진행 사항',detail.get('진행 사항 (미팅내용)'))),'조치내용':text(detail.get('조치내용')),'완료일':text(detail.get('완료일')),'조치자':text(detail.get('담당자(조치자)')),'45호기 적용 여부':text(detail.get('45호기 적용 여부')),'시트':detail.get('시트','')})
+        rows.append({'ID':detail['ID'],'범위':detail.get('범위','주요 5개 분야'),'설비':text(detail.get('호기')) or '미기재','분야':detail.get('분야',detail.get('시트','')),'상태':'완료' if text(detail.get('완료여부')).upper() in ('O','○','완료') else '미완료','Unit':text(detail.get('Unit명')),'내용':text(detail.get('불합리 및 이슈 내용')),'담당자':text(detail.get('담당자')),'목표일':text(detail.get('목표일 원문')),'발생일':text(detail.get('발생일')),'원인':text(detail.get('사유 or 원인')),'진행 사항':text(detail.get('진행 사항',detail.get('진행 사항 (미팅내용)'))),'조치내용':text(detail.get('조치내용')),'완료일':text(detail.get('완료일')),'조치자':text(detail.get('담당자(조치자)')),'45호기 적용 여부':text(detail.get('45호기 적용 여부')),'시트':detail.get('시트',''),**{key:text(detail.get(key)) for key in ['개선 Item','상세 내용','원본 상태','진척도','비고','관련 메모']}})
     for name in ['고객사요청','software불합리','설비알람']:
         for n,row in enumerate(previews.get(name,{}).get('rows',[]),1):
             val=lambda col: text(row[col-1]) if col<=len(row) else ''
@@ -111,3 +111,4 @@ def workbook_export(tables):
         sheet.sheet_properties.pageSetUpPr.fitToPage=True
         sheet.page_setup.orientation='landscape';sheet.page_setup.fitToWidth=1;sheet.page_setup.fitToHeight=0
     output=BytesIO();book.save(output);return output.getvalue()
+
