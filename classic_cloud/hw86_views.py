@@ -65,12 +65,49 @@ def measurement_detail(record):
         '측정 개수':f"{summary['count']}/{total}"}],hide_index=True,use_container_width=True)
 
 
+def export_all(data):
+    """Export every received record and numeric point, independent of UI filters."""
+    tables={}
+    for kind in ['Diffuser Flatness','Susceptor Flatness','Spacing','Shim 변경이력']:
+        rows=[]
+        for record in data['measurements']:
+            if record['kind']!=kind:continue
+            row={'기록 ID':record['id'],'설비':data.get('equipment','A6 BP-04'),
+                '측정일':record['date'],'기록':record['title'],'조건':record['condition'],
+                '구분':record['representation'],'메모':record['notes'],
+                '원본 시트':record['sheet'],'원본 위치':record['cell'],
+                '측정 개수':record['stats']['count'],'Center':record['stats']['center'],
+                '최소값':record['stats']['min'],'최대값':record['stats']['max'],
+                'Max−Min':record['stats']['range'],
+                '미측정 메모':'\n'.join(record.get('cell_notes',[]))}
+            row.update({f'R{r}C{c}':value for r,line in enumerate(record['grid'],1) for c,value in enumerate(line,1)})
+            if kind=='Shim 변경이력':
+                row.update({f'Shim_R{r}C{c}':value for r,line in enumerate(record['shim'],1) for c,value in enumerate(line,1)})
+                row['Shim 가공 메모']='\n'.join(record.get('shim_notes',[]))
+            rows.append(row)
+        tables[kind]=pd.DataFrame(rows)
+    tables['안내']=pd.DataFrame({'안내':[
+        '검색 및 메뉴 선택과 관계없이 수신된 네 항목의 전체 기록입니다.',
+        'R/C는 각 원본 측정 블록의 상대 행/열입니다. Shim_R/C는 원본 Shim 배치 기준이며 간격용 빈칸을 유지합니다.',
+        '0과 음수는 실측값입니다. 미측정 값은 빈칸이며 원본 표기는 메모에 보존합니다.',
+        '날짜 없는 기록은 날짜를 추정하지 않습니다. 원문 제목을 확인하세요.',
+        'Excel 원본 편차 표는 포함하지 않습니다. Center는 배열 중앙 측정점이며 Max−Min은 유효 실측 범위입니다.',
+        *data.get('warnings',[])]})
+    return workbook_export(tables)
+
+
 def hardware(snapshot):
     st.header('8.6G · A6 BP-04 H/W 이력관리')
     data=snapshot.get('previews',{}).get('__hw86_data__')
     if not data:
         st.info('8.6G H/W 파일 수신을 기다리고 있습니다.');return
-    kind=cards('H/W 메뉴',['Diffuser Flatness','Susceptor Flatness','Spacing','Shim 변경이력'],'hw86_kind',True)
+    kind=cards('H/W 메뉴',['Diffuser Flatness','Susceptor Flatness','Spacing','Shim 변경이력','데이터 관리'],'hw86_kind',True)
+    if kind=='데이터 관리':
+        st.subheader('8.6G H/W 전체 데이터 다운로드')
+        st.download_button('H/W 전체 Excel 다운로드',export_all(data),'8.6G_HW_All_Data.xlsx',
+            mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',key='hw86_download_all')
+        st.caption('Diffuser · Susceptor · Spacing · Shim 전체 이력과 위치별 실측값, 가공 메모를 포함합니다. 검색 필터와 관계없이 전체 데이터를 내려받습니다.')
+        return
     search=st.text_input('측정 이력 검색',placeholder='날짜·평가 차수·온도 조건·부품 번호',key='hw86_search')
     records=[r for r in data['measurements'] if r['kind']==kind and all(t.casefold() in (r['title']+' '+r['notes']+' '+r['date']).casefold() for t in search.split())]
     records.sort(key=lambda r:(r['date'],r['row'],r['column']),reverse=True)
