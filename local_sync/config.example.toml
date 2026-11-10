@@ -13,3 +13,7 @@ poll_seconds = 30
 # 8G CPO PENDING: 파일명 패턴이 일치하는 파일 중 최근 수정 파일을 선택합니다.
 # pending8_excel_path = 'C:\EquipmentData\A6_BP_04_정리_CPO_Qual_Pending_List_v*_*.xlsx'
 # pending8_source_id = 'pending-8g'
+
+# 8.6G H/W: Diffuser / Susceptor / Spacing / Shim 이력
+# hw86_excel_path = 'C:\EquipmentData\A6_BP_04_결과_공정_라인_v*_*.xlsx'
+# hw86_source_id = 'hw-86'

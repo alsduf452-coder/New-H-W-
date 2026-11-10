@@ -22,6 +22,7 @@ from workbook_mapping import workbook_view
 from hw_excel import parse_hw, SCHEMA_VERSION
 from pending_octa import parse_pending, SCHEMA_VERSION as PENDING_SCHEMA
 from pending_cpo import parse_cpo, SCHEMA_VERSION as CPO_SCHEMA
+from hw86_excel import parse_hw86, SCHEMA_VERSION as HW86_SCHEMA
 
 
 def load_mapping(raw):
@@ -29,7 +30,7 @@ def load_mapping(raw):
         mapping = json.loads(raw or '{}')
         if not isinstance(mapping, dict):
             raise ValueError()
-        if mapping.get('mode', 'pending') not in ('pending', 'hw', 'pending_octa', 'pending_cpo'):
+        if mapping.get('mode', 'pending') not in ('pending', 'hw', 'pending_octa', 'pending_cpo', 'hw86'):
             raise ValueError()
         if not isinstance(mapping.get('pending_sheet', 'PENDING'), str):
             raise ValueError()
@@ -71,6 +72,7 @@ def create_app(repository=None, token=None, source_id=None, mapping=None, source
         config = configurations[selected]
         versions = {'mapping': config, 'hw_parser': SCHEMA_VERSION, 'pending_parser': PENDING_SCHEMA}
         if config.get('mode') == 'pending_cpo':versions['cpo_parser'] = CPO_SCHEMA
+        if config.get('mode') == 'hw86':versions['hw86_parser'] = HW86_SCHEMA
         version = hashlib.sha256(json.dumps(versions, sort_keys=True).encode()).hexdigest()
         return selected, config, version
 
@@ -131,7 +133,12 @@ def create_app(repository=None, token=None, source_id=None, mapping=None, source
         if request.headers.get('x-content-sha256') != digest:
             raise HTTPException(400, '파일 해시가 일치하지 않습니다.')
         try:
-            previews, pending, warning = await run_in_threadpool(workbook_view, content, mapping)
+            hw86 = None
+            if mapping.get('mode') == 'hw86':
+                hw86 = await run_in_threadpool(parse_hw86, content)
+                previews, pending, warning = {}, None, None
+            else:
+                previews, pending, warning = await run_in_threadpool(workbook_view, content, mapping)
             hw = await run_in_threadpool(parse_hw, content) if mapping.get('mode') == 'hw' else None
             pending_info = None
             if mapping.get('mode') == 'pending_octa':
@@ -146,11 +153,13 @@ def create_app(repository=None, token=None, source_id=None, mapping=None, source
         previews = {name: {'rows': [[str(v)[:2000] if v is not None else '' for v in row] for row in sheet['rows']], 'truncated': sheet['truncated']} for name, sheet in previews.items()}
         if len(json.dumps(previews, ensure_ascii=False).encode()) > 8 * 1024 * 1024:
             raise HTTPException(422, '시트 미리보기 데이터가 너무 큽니다. 불필요한 긴 셀 내용을 줄여주세요.')
+        if hw86 is not None:
+            previews['__hw86_data__'] = hw86
         if hw is not None:
             previews['__hw_data__'] = hw
         if pending_info is not None:
             previews['__pending_data__'] = pending_info
-        state = {'pending_records':pending_info['count'] if pending_info else len(pending) if pending is not None else 0, 'pending_warnings':len(pending_info['warnings']) if pending_info else 0, 'mode': mapping.get('mode', 'pending'), 'hw_records': len(hw['measurements']) if hw else 0, 'file_hash': digest, 'mapping_hash': mapping_hash, 'warning': warning, 'sheet_names': [name for name in previews if not name.startswith('__')]}
+        state = {'pending_records':pending_info['count'] if pending_info else len(pending) if pending is not None else 0, 'pending_warnings':len(pending_info['warnings']) if pending_info else 0, 'mode': mapping.get('mode', 'pending'), 'hw_records': len(hw86['measurements']) if hw86 else len(hw['measurements']) if hw else 0, 'file_hash': digest, 'mapping_hash': mapping_hash, 'warning': warning, 'sheet_names': [name for name in previews if not name.startswith('__')]}
         try:
             result = await run_in_threadpool(repository.ingest_local, source_id, int(raw_revision), state, previews, pending)
         except ConflictError as exc:

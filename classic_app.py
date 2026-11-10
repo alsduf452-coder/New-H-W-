@@ -4,7 +4,7 @@ from zoneinfo import ZoneInfo
 import streamlit as st
 from classic_cloud.reader import SnapshotReader
 from sync_control import SyncControl
-from classic_cloud import model, views
+from classic_cloud import model, views, hw86_views
 from classic_cloud.visuals import STYLE, cards
 from login_ui import require_local, guard_fragment
 
@@ -22,8 +22,8 @@ with st.sidebar:
     if generation=='6G':
         hw_unit=st.selectbox('H/W 설비',['45호기','15호기'],key='classic_hw_unit')
     else:
-        hw_unit=None
-        st.info('8G H/W 설비 등록 준비 중')
+        hw_unit='A6 BP-04'
+        st.caption('8.6G · A6 BP-04')
     st.caption('PENDING은 선택한 세대의 파일을 조회합니다. H/W 설비 선택은 H/W 조회에 적용됩니다.')
 
 if st.session_state.get('classic_previous_generation')!=generation:
@@ -58,6 +58,11 @@ elif mode=='postgres':
         if generation=='6G':
             source_id=config.get('source_id','local-excel') if hw_unit=='45호기' else config.get('hw15_source_id','hw-15')
             hw=database.read(source_id)
+        else:
+            source86=config.get('hw86_source_id','hw-86')
+            if source86 in (config.get('source_id','local-excel'),config.get('hw15_source_id','hw-15'),config.get('pending_source_id','pending-excel'),config.get('pending8_source_id','pending-8g')):
+                raise ValueError('8.6G H/W 소스 ID가 중복됩니다.')
+            hw=database.read(source86)
         pending_source=config.get('pending_source_id','pending-excel') if generation=='6G' else config.get('pending8_source_id','pending-8g')
         if generation=='8G' and pending_source==config.get('pending_source_id','pending-excel'):
             raise ValueError('6G/8G PENDING 소스 ID가 중복됩니다.')
@@ -125,7 +130,7 @@ def content():
         except Exception:
             if st.session_state.get('manual_requested'):st.warning('수동 동기화 상태를 확인하지 못했습니다.')
     received=[(generation+' PENDING',current['pending'])]
-    if generation=='6G':received.append((generation+' · '+hw_unit+' H/W',current['hw']))
+    received.append(((generation if generation=='6G' else '8.6G')+' · '+hw_unit+' H/W',current['hw']))
     for label,snapshot in received:
         state=snapshot.get('state',{})
         stamp=state.get('received_at')
@@ -139,9 +144,7 @@ def content():
             st.warning('기존 앱 DB 반영에 충돌이 있습니다. 새 앱은 가장 최근 수신한 Excel 스냅샷을 표시합니다. 기존 앱의 충돌 내역을 별도로 확인해주세요.')
     if page=='PENDING 현황':views.pending(current['pending'],filters,generation)
     elif page=='PENDING List REV관리':views.revisions(current['pending'],generation)
-    elif generation=='8G':
-        st.header('8G · H/W 이력관리')
-        st.info('8G H/W 설비 등록 준비 중')
+    elif generation=='8G':hw86_views.hardware(current['hw'])
     else:views.hardware(current['hw'],chamber,section,flatness,query,generation+' · '+hw_unit)
 
 content()
