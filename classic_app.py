@@ -4,7 +4,7 @@ from zoneinfo import ZoneInfo
 import streamlit as st
 from classic_cloud.reader import SnapshotReader
 from sync_control import SyncControl
-from classic_cloud import model, views, hw86_views
+from classic_cloud import model, views, hw86_views, process_views
 from classic_cloud.visuals import STYLE, cards
 from login_ui import require_local, guard_fragment
 
@@ -66,7 +66,12 @@ elif mode=='postgres':
         pending_source=config.get('pending_source_id','pending-excel') if generation=='6G' else config.get('pending8_source_id','pending-8g')
         if generation=='8G' and pending_source==config.get('pending_source_id','pending-excel'):
             raise ValueError('6G/8G PENDING 소스 ID가 중복됩니다.')
-        return {'hw':hw,'pending':database.read(pending_source)}
+        process={'revision':0,'state':{},'previews':{}}
+        if generation=='6G' and hw_unit=='15호기':
+            process_source=config.get('process15_source_id','process-15')
+            if process_source in (config.get('source_id','local-excel'),config.get('hw15_source_id','hw-15'),pending_source):raise ValueError('공정 소스 ID 중복')
+            process=database.read(process_source)
+        return {'hw':hw,'pending':database.read(pending_source),'process':process}
 else:
     st.error('저장 모드 설정을 확인해주세요.');st.stop()
 
@@ -78,7 +83,9 @@ except Exception:
 with st.sidebar:
     st.markdown('**🔷 양산 설비 통합 관리**')
     st.caption('PECVD 설비 · Excel 연동 조회')
-    page=cards('화면 선택',['PENDING 현황','PENDING List REV관리','설비 H/W 이력관리'],'classic_page')
+    pages=['PENDING 현황','PENDING List REV관리','설비 H/W 이력관리']
+    if generation=='6G' and hw_unit=='15호기':pages.append('H/W · 공정 Map')
+    page=cards('화면 선택',pages,'classic_page')
     if st.button('Excel 동기화 요청',use_container_width=True):
         if mode=='postgres':
             try:
@@ -131,6 +138,7 @@ def content():
             if st.session_state.get('manual_requested'):st.warning('수동 동기화 상태를 확인하지 못했습니다.')
     received=[(generation+' PENDING',current['pending'])]
     received.append(((generation if generation=='6G' else '8.6G')+' · '+hw_unit+' H/W',current['hw']))
+    if generation=='6G' and hw_unit=='15호기':received.append(('15호기 공정 Map',current.get('process',{})))
     for label,snapshot in received:
         state=snapshot.get('state',{})
         stamp=state.get('received_at')
@@ -142,7 +150,8 @@ def content():
         if state.get('warning'):st.warning(label+': '+state['warning'])
         if state.get('pending_status')=='conflict':
             st.warning('기존 앱 DB 반영에 충돌이 있습니다. 새 앱은 가장 최근 수신한 Excel 스냅샷을 표시합니다. 기존 앱의 충돌 내역을 별도로 확인해주세요.')
-    if page=='PENDING 현황':views.pending(current['pending'],filters,generation)
+    if page=='H/W · 공정 Map':process_views.process_panel(current.get('process',{}),current['hw'])
+    elif page=='PENDING 현황':views.pending(current['pending'],filters,generation)
     elif page=='PENDING List REV관리':views.revisions(current['pending'],generation)
     elif generation=='8G':hw86_views.hardware(current['hw'])
     else:views.hardware(current['hw'],chamber,section,flatness,query,generation+' · '+hw_unit)

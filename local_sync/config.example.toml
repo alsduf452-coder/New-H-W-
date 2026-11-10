@@ -17,3 +17,7 @@ poll_seconds = 30
 # 8.6G H/W: Diffuser / Susceptor / Spacing / Shim 이력
 # hw86_excel_path = 'C:\EquipmentData\A6_BP_04_결과_공정_라인_v*_*.xlsx'
 # hw86_source_id = 'hw-86'
+
+# 6G 15호기 공정 Map: Unif 결과 데이터 시트만 수신
+# process15_excel_path = 'C:\EquipmentData\A4_BP_15_결과_A4CVD15I MT 결과_v*_*.xlsx'
+# process15_source_id = 'process-15'

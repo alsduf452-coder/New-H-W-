@@ -56,6 +56,8 @@ def _run(root=ROOT, now=None, sync=sync_once):
         jobs.append(('8G PENDING',{**config,'excel_path':config['pending8_excel_path'],'source_id':config['pending8_source_id']}))
     if config.get('hw86_excel_path'):
         jobs.append(('8.6G H/W',{**config,'excel_path':config['hw86_excel_path'],'source_id':config['hw86_source_id']}))
+    if config.get('process15_excel_path'):
+        jobs.append(('15호기 공정 Map',{**config,'excel_path':config['process15_excel_path'],'source_id':config['process15_source_id']}))
     with requests.Session() as session:
         for label,job in jobs:
             try:
