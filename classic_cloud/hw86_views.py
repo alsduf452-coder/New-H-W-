@@ -13,7 +13,18 @@ def grid_table(grid,title):
     st.markdown('**'+title+'**')
     # Keep sparse positions: blanks are not zero or assumed measurement points.
     rows=''.join('<tr>'+''.join('<td style="padding:10px;border:1px solid #cbd5e1;text-align:center">'+(f'{v:g}' if v is not None else '—')+'</td>' for v in row)+'</tr>' for row in grid)
-    st.markdown('<table style="width:100%;background:#f1f5f9;color:#17324d">'+rows+'</table>',unsafe_allow_html=True)
+    st.markdown('<table style="width:100%;table-layout:fixed;background:#f1f5f9;color:#17324d">'+rows+'</table>',unsafe_allow_html=True)
+
+
+def shim_display_grid(grid):
+    """Remove spacer cells while keeping a stable 4x5 physical layout across revisions."""
+    rows=set((0,2,4,6));cols=set((0,2,3,4,6))
+    # Retain any future measurements outside the current template instead of dropping them.
+    for r,line in enumerate(grid):
+        for c,value in enumerate(line):
+            if value is not None:rows.add(r);cols.add(c)
+    return [[grid[r][c] if r<len(grid) and c<len(grid[r]) else None
+             for c in sorted(cols)] for r in sorted(rows)]
 
 
 def label(record):
@@ -86,7 +97,7 @@ def hardware(snapshot):
     else:measurement_detail(current)
     for note in current['cell_notes']:st.caption(note)
     if kind=='Shim 변경이력':
-        grid_table(current['shim'],'위치별 Shim 두께 · Excel 배치')
+        grid_table(shim_display_grid(current['shim']),'위치별 Shim 두께 · 실제 배치')
         for note in current['shim_notes']:st.write(note)
     st.caption('숫자는 Excel 원문 단위를 유지합니다. 배열 중앙값과 전체 범위(Max−Min)는 실측값으로 계산합니다.')
     candidates=[r for r in records if r['id']!=current['id'] and len(r['grid'])==len(current['grid'])]
@@ -98,4 +109,4 @@ def hardware(snapshot):
         if baseline['condition']!=current['condition']:st.info('서로 다른 측정 조건의 기록입니다. 조건 차이를 함께 확인해주세요.')
         if baseline['representation']!=current['representation']:st.info('원본 측정과 변환표 비교입니다. 측정 위치 대응을 확인해주세요.')
         grid_table(delta(baseline,current),'Flatness 변화량' if kind=='Shim 변경이력' else '측정 변화량')
-        if kind=='Shim 변경이력':grid_table(delta(baseline,current,'shim'),'Shim 두께 변화량')
+        if kind=='Shim 변경이력':grid_table(shim_display_grid(delta(baseline,current,'shim')),'Shim 두께 변화량')
