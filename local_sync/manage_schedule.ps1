@@ -23,19 +23,20 @@ while ($true) {
         $settings = Get-Content -LiteralPath $settingsPath -Raw | ConvertFrom-Json
         switch ($choice) {
             '1' {
-                if (!(Test-Path '.venv\Scripts\python.exe')) {throw 'Run install.bat in this folder first.'}
+                if (!(Test-Path '.venv\Scripts\pythonw.exe')) {throw 'Run install.bat in this folder first.'}
                 if (!(Test-Path 'config.toml')) {throw 'Copy your config.toml into this folder first.'}
+                if (!(Test-Path 'background_launcher.py')) {throw 'Update background_launcher.py first.'}
                 $token = Read-Host 'Enter SYNC_TOKEN for hw-excel-sync-classic (hidden)' -AsSecureString
                 if ($token.Length -lt 43) {throw 'Token must contain at least 43 characters.'}
                 ConvertFrom-SecureString $token | Set-Content -LiteralPath "$PSScriptRoot\token.dpapi" -Encoding ASCII
                 $user = [Security.Principal.WindowsIdentity]::GetCurrent().Name
-                $action = New-ScheduledTaskAction -Execute "$env:SystemRoot\System32\WindowsPowerShell\v1.0\powershell.exe" -Argument "-NoProfile -NonInteractive -ExecutionPolicy RemoteSigned -WindowStyle Hidden -File `"$PSScriptRoot\run_daily.ps1`"" -WorkingDirectory $PSScriptRoot
+                $action = New-ScheduledTaskAction -Execute "$PSScriptRoot\.venv\Scripts\pythonw.exe" -Argument "`"$PSScriptRoot\background_launcher.py`"" -WorkingDirectory $PSScriptRoot
                 $trigger = New-ScheduledTaskTrigger -Daily -At '09:00'
                 $principal = New-ScheduledTaskPrincipal -UserId $user -LogonType Interactive -RunLevel Limited
                 $options = New-ScheduledTaskSettingsSet -MultipleInstances IgnoreNew -ExecutionTimeLimit (New-TimeSpan -Minutes 20) -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries
                 # No StartWhenAvailable, WakeToRun, or RestartCount: no catch-up/retry.
                 Register-ScheduledTask -TaskName $taskName -Action $action -Trigger $trigger -Principal $principal -Settings $options -Force | Out-Null
-                $manualAction = New-ScheduledTaskAction -Execute "$env:SystemRoot\System32\WindowsPowerShell\v1.0\powershell.exe" -Argument "-NoProfile -NonInteractive -ExecutionPolicy RemoteSigned -WindowStyle Hidden -File `"$PSScriptRoot\run_daily.ps1`" -Manual" -WorkingDirectory $PSScriptRoot
+                $manualAction = New-ScheduledTaskAction -Execute "$PSScriptRoot\.venv\Scripts\pythonw.exe" -Argument "`"$PSScriptRoot\background_launcher.py`" --manual" -WorkingDirectory $PSScriptRoot
                 $manualTrigger = New-ScheduledTaskTrigger -Daily -At '00:00'
                 $repeat = New-ScheduledTaskTrigger -Once -At '00:00' -RepetitionInterval (New-TimeSpan -Minutes 1) -RepetitionDuration (New-TimeSpan -Days 1)
                 $manualTrigger.Repetition = $repeat.Repetition
@@ -68,3 +69,4 @@ while ($true) {
         }
     } catch {Write-Host ('Could not complete: '+$_.Exception.Message)}
 }
+

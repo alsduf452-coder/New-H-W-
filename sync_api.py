@@ -8,6 +8,7 @@ from fastapi import FastAPI, HTTPException, Request, Depends
 from pydantic import BaseModel, Field
 from typing import Literal
 from sync_control import SyncControl
+from sync_control_api import mount_control
 
 class ManualResult(BaseModel):
     request_id: str = Field(min_length=32,max_length=32,pattern="^[a-f0-9]+$")
@@ -178,5 +179,6 @@ def create_app(repository=None, token=None, source_id=None, mapping=None, source
             raise HTTPException(503, 'DB 반영에 실패했습니다. 다음 확인 시 다시 시도해주세요.') from None
         return result
 
+    mount_control(app, control, os.environ.get('SYNC_CONTROL_TOKEN',''), token)
     return app
 
