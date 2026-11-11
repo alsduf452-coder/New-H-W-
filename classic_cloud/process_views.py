@@ -47,7 +47,8 @@ def process_panel(process_snapshot,hw_snapshot):
     with left:
         st.subheader('D/R 공정 Map')
         st.markdown(map_html(run['grid']),unsafe_allow_html=True)
-        st.markdown('**Unif. '+(f"{run['unif']:.2f}%" if run['unif'] is not None else 'Data 없음')+'**')
+        unif_text=f"{run['unif']:.2f}%" if run['unif'] is not None else 'Data 없음'
+        st.markdown('<div style="text-align:right;font-weight:600;margin-top:8px">Unif. '+unif_text+'</div>',unsafe_allow_html=True)
     with right:
         st.subheader('평가 조건 및 변경 메모')
         detail([('평가일',run['date']),('PC',run['chamber']),('Recipe',run['recipe']),('Dep Time',run['dep_time']),('Diffuser S/N',run['diffuser_sn']),('Susceptor S/N',run['susceptor_sn']),('HCG',run['hcg']),('평가 메모',run['notes'])])
