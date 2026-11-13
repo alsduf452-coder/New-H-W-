@@ -4,6 +4,7 @@ from zoneinfo import ZoneInfo
 import streamlit as st
 from classic_cloud.reader import SnapshotReader
 from sync_control import SyncControl
+from classic_cloud.sync_status import render_sync_status
 from classic_cloud import model, views, hw86_views, process_views
 from classic_cloud.visuals import STYLE, cards
 from login_ui import require_local, guard_fragment
@@ -131,9 +132,8 @@ def content():
     if mode=='postgres':
         try:
             request=SyncControl(database.engine).status()
-            labels={'pending':'PC 응답 대기 중 · 최대 5분','running':'PC에서 Excel 동기화 중','done':'수동 동기화 완료','failed':'수동 동기화 실패','blocked':'동기화 일시정지 또는 부재 기간','expired':'수동 요청 만료 · 자동 재시도하지 않음'}
             if request:
-                st.info(labels.get(request.get('status'),'') + (' · '+request['summary'] if request.get('summary') else ''))
+                render_sync_status(request)
         except Exception:
             if st.session_state.get('manual_requested'):st.warning('수동 동기화 상태를 확인하지 못했습니다.')
     received=[(generation+' PENDING',current['pending'])]
