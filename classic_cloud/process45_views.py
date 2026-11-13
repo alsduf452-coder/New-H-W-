@@ -9,9 +9,9 @@ from classic_cloud.process_views import map_html
 def measurement_chart(grid, title, spacing=False, process=False):
     if not any(numeric(value) for line in grid for value in line):
         return
-    # Reuse the 15-unit renderers. The 45-unit sheets place G/V at
-    # the top of their 7x5 flatness grid, so retain that orientation.
-    html = map_html(grid).replace('Data 없음', '—') if process else diagram_svg(grid, spacing, orientation='rows')
+    # Match the 15-unit 5x7 cells without changing stored measurements.
+    # Original row/column labels follow each value through the display transpose.
+    html = map_html(grid).replace('Data 없음', '—') if process else diagram_svg(grid, spacing, transpose=not spacing)
     st.markdown(html, unsafe_allow_html=True)
 
 

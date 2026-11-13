@@ -106,8 +106,13 @@ def measurement_table(grid, spacing=False):
     return '<div class="classic-table-wrap"><table class="classic-table classic-measure"><thead><tr><th>구분</th>'+''.join('<th>Col '+str(c+1)+'</th>' for c in range(cols))+'</tr></thead><tbody>'+''.join(rows)+'</tbody></table></div>'
 
 
-def diagram_svg(grid, spacing=False, limits=None, orientation='columns'):
+def diagram_svg(grid, spacing=False, limits=None, orientation='columns', transpose=False):
     if spacing:return spacing_diagram_svg(grid)
+    # Display-only transpose: original (row, column) labels stay with their values.
+    # For the 45-unit sheet, top G/V becomes left G/V; bottom Window becomes right.
+    if transpose:
+        grid=[list(column) for column in zip(*grid)]
+        orientation='columns'
     values=[v for row in grid for v in row if numeric(v)]
     low,high=limits or ((min(values),max(values)) if values else (0,0))
     nr,nc=len(grid),len(grid[0]);width=560/nc;height=310/nr
@@ -122,9 +127,11 @@ def diagram_svg(grid, spacing=False, limits=None, orientation='columns'):
             ratio=min(1,max(0,ratio))
             color='#e2e8f0' if not numeric(v) else '#'+''.join(f'{round(a+(b-a)*ratio):02x}' for a,b in zip((37,99,235),(239,68,68)))
             x,y=60+j*width,65+i*height
-            label=f'P{points[i][j]}' if spacing else f'R{i+1}C{j+1}'
+            label=f'P{points[i][j]}' if spacing else (f'R{j+1}C{i+1}' if transpose else f'R{i+1}C{j+1}')
             ink='#475569' if not numeric(v) else '#ffffff'
             out.append(f'<rect x="{x}" y="{y}" width="{width}" height="{height}" fill="{color}" stroke="#cbd5e1"/><text x="{x+4}" y="{y+13}" font-size="10" fill="{ink}">{label}</text><text x="{x+width/2}" y="{y+height/2+7}" text-anchor="middle" font-size="19" font-weight="700" fill="{ink}">{escape(number(v))}</text>')
+    if transpose:
+        out=[part.replace('G/V · Col 1','G/V · 원본 Row 1').replace('Window · Col 7','Window · 원본 Row 7') for part in out]
     return ''.join(out)+'</svg>'
 
 SPACING_LAYOUT=[[1,6,2],[9,5,7],[4,8,3]]
