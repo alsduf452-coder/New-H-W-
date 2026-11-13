@@ -43,13 +43,30 @@ def process_panel(process_snapshot,hw_snapshot):
                 st.markdown('<div style="height:250px;border:1px solid #cbd5e1;display:flex;align-items:center;justify-content:center">연결 확인 필요</div>',unsafe_allow_html=True)
                 st.caption(reason)
     st.caption('평가일 당일/이전 최근 측정일 기준 · 미래 측정값 제외 · S/N 불일치/동일 날짜 중복은 자동 연결하지 않습니다.')
-    left,right=st.columns([3,2])
-    with left:
-        st.subheader('D/R 공정 Map')
-        st.markdown(map_html(run['grid']),unsafe_allow_html=True)
-        unif_text=f"{run['unif']:.2f}%" if run['unif'] is not None else 'Data 없음'
-        st.markdown('<div style="text-align:right;font-weight:600;margin-top:8px">Unif. '+unif_text+'</div>',unsafe_allow_html=True)
-    with right:
-        st.subheader('평가 조건 및 변경 메모')
-        detail([('평가일',run['date']),('PC',run['chamber']),('Recipe',run['recipe']),('Dep Time',run['dep_time']),('Diffuser S/N',run['diffuser_sn']),('Susceptor S/N',run['susceptor_sn']),('HCG',run['hcg']),('평가 메모',run['notes'])])
+    st.markdown(process_comparison_html(run),unsafe_allow_html=True)
     st.caption('출처: Unif 결과 데이터!'+run['source_cell']+' · 좌표 숫자는 표시하지 않습니다. Unif.는 Excel 원본값입니다.')
+
+
+def process_comparison_html(run):
+    items=[('평가일',run['date']),('PC',run['chamber']),('Recipe',run['recipe']),('Dep Time',run['dep_time']),('Diffuser S/N',run['diffuser_sn']),('Susceptor S/N',run['susceptor_sn']),('HCG',run['hcg']),('평가 메모',run['notes'])]
+    rows=''.join('<tr><th>'+escape(str(k))+'</th><td>'+escape(str('—' if v is None or v=='' else v))+'</td></tr>' for k,v in items)
+    unif=f"{run['unif']:.2f}%" if run['unif'] is not None else 'Data 없음'
+    return ('<style>'
+        '.process-comparison{display:grid;grid-template-columns:minmax(0,3fr) minmax(0,2fr);gap:12px 16px;align-items:stretch}'
+        '.process-comparison h3{margin:0;padding:0}'
+        '.process-map-body{min-height:300px;display:flex;min-width:0}'
+        '.process-map-body>div,.process-map-body>table{height:100%!important;min-height:300px;width:100%;margin:0;box-sizing:border-box}'
+        '.process-map-body>table{border-collapse:collapse}'
+        '.process-condition-body{margin:0;min-width:0;border:1px solid #cfdae5;border-radius:12px;overflow:hidden}'
+        '.process-condition-body table{height:100%;margin:0}'
+        '.process-condition-body th{width:24%}'
+        '.process-unif{text-align:right;font-weight:600}'
+        '@media(max-width:640px){.process-comparison{grid-template-columns:minmax(0,1fr)}'
+        '.process-map-title{grid-row:1}.process-map-body{grid-row:2}.process-unif{grid-row:3}'
+        '.process-condition-title{grid-row:4}.process-condition-body{grid-row:5}}'
+        '</style><div class="process-comparison">'
+        '<h3 class="process-map-title">D/R 공정 Map</h3>'
+        '<h3 class="process-condition-title">평가 조건 및 변경 메모</h3>'
+        '<div class="process-map-body">'+map_html(run['grid'])+'</div>'
+        '<div class="process-condition-body"><table class="classic-table classic-detail">'+rows+'</table></div>'
+        '<div class="process-unif">Unif. '+unif+'</div></div>')
