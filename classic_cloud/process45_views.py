@@ -42,9 +42,8 @@ def process45_panel(snapshot):
             measured, reason = link_process45(run, data['measurements'], kind)
             if measured:
                 st.caption('H/W 측정일 '+measured['date'])
-                st.caption('Diffuser S/N: '+measured['diffuser_sn']+' · Susceptor S/N: '+measured['susceptor_sn'])
-                st.caption('▲ G/V 측 · ▼ Window 측')
                 measurement_chart(measured['grid'], kind, kind == 'Spacing')
+                st.caption('Diffuser S/N: '+measured['diffuser_sn']+' · Susceptor S/N: '+measured['susceptor_sn'])
             else:
                 st.caption(reason)
     st.caption('선택한 평가 블록의 측정일·S/N 기준 · 공정 평가일 이후 측정값 제외')

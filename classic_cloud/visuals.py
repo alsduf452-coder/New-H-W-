@@ -111,7 +111,7 @@ def diagram_svg(grid, spacing=False, limits=None, orientation='columns'):
     values=[v for row in grid for v in row if numeric(v)]
     low,high=limits or ((min(values),max(values)) if values else (0,0))
     nr,nc=len(grid),len(grid[0]);width=560/nc;height=310/nr
-    out=['<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 680 440" role="img" aria-label="측정 위치도">','<rect x="40" y="40" width="600" height="360" rx="20" fill="#d9e2ef" stroke="#64748b" stroke-width="3"/>']
+    out=['<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 680 440" style="width:100%;height:auto;display:block" role="img" aria-label="측정 위치도">','<rect x="40" y="40" width="600" height="360" rx="20" fill="#d9e2ef" stroke="#64748b" stroke-width="3"/>']
     if spacing:out+=['<text x="340" y="25" text-anchor="middle" fill="#075985">G/V 측</text>','<text x="340" y="425" text-anchor="middle" fill="#92400e">Window 측</text>']
     elif orientation=='rows':out+=['<text x="340" y="25" text-anchor="middle" fill="#075985">▲ G/V 측</text>','<text x="340" y="425" text-anchor="middle" fill="#92400e">▼ Window 측</text>']
     else:out+=['<text x="20" y="220" transform="rotate(-90 20 220)" text-anchor="middle" fill="#075985">G/V · Col 1</text>','<text x="663" y="220" transform="rotate(90 663 220)" text-anchor="middle" fill="#92400e">Window · Col 7</text>']
