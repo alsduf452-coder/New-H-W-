@@ -8,7 +8,8 @@ from agent import resolve_excel,SyncError,load_config
 
 def test_newest_matching_file_and_ignore_lock_file(tmp_path):
     a=tmp_path/'HW_(test)_20260101.xlsx';b=tmp_path/'HW_(test)_20260102.xlsx'
-    a.touch();b.touch();os.utime(a,ns=(1,1));os.utime(b,ns=(2,2))
+    # NTFS timestamps have 100 ns granularity; 1 ns and 2 ns collapse.
+    a.touch();b.touch();os.utime(a,ns=(1_000_000_000,1_000_000_000));os.utime(b,ns=(2_000_000_000,2_000_000_000))
     (tmp_path/'~$HW_(test)_20260103.xlsx').touch()
     (tmp_path/'OTHER_20260103.xlsx').touch()
     pattern=tmp_path/'HW_(test)_*.xlsx'

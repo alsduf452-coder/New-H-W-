@@ -53,6 +53,7 @@ def run(root=ROOT,now=None,sync=sync_once,session_factory=requests.Session):
                     if config.get('pending8_excel_path'):jobs.append(('8G PENDING',{**config,'excel_path':config['pending8_excel_path'],'source_id':config['pending8_source_id']}))
                     if config.get('hw86_excel_path'):jobs.append(('8.6G H/W',{**config,'excel_path':config['hw86_excel_path'],'source_id':config['hw86_source_id']}))
                     if config.get('process15_excel_path'):jobs.append(('15호기 공정 Map',{**config,'excel_path':config['process15_excel_path'],'source_id':config['process15_source_id']}))
+                    if config.get('process45_excel_path'):jobs.append(('45호기 공정 Map',{**config,'excel_path':config['process45_excel_path'],'source_id':config['process45_source_id']}))
                     for label,job in jobs:
                         try:
                             message=sync(job,token,session)

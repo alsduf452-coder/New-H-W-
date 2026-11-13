@@ -77,6 +77,15 @@ def load_config(path):
         if not isinstance(source,str) or not re.fullmatch(r'[A-Za-z0-9_-]{1,80}',source) or source in ['local-excel',*[v for k,v in result.items() if k.endswith('source_id')]]:
             raise SyncError('공정 소스 ID가 중복되거나 올바르지 않습니다.')
         result.update(process15_excel_path=path,process15_source_id=source)
+    extra45 = config.get('process45_excel_path', '')
+    if extra45:
+        path45 = Path(extra45).expanduser()
+        source45 = config.get('process45_source_id', 'process-45')
+        if not path45.is_absolute() or path45.suffix.lower() != '.xlsx' or path45.name.startswith('~$') or path45 in [v for k,v in result.items() if k.endswith('excel_path')]:
+            raise SyncError('process45_excel_path는 별도 xlsx 절대 경로여야 합니다.')
+        if not isinstance(source45,str) or not re.fullmatch(r'[A-Za-z0-9_-]{1,80}',source45) or source45 in ['local-excel',*[v for k,v in result.items() if k.endswith('source_id')]]:
+            raise SyncError('45호기 공정 소스 ID를 확인해주세요.')
+        result.update(process45_excel_path=path45,process45_source_id=source45)
     return result
 
 
@@ -123,13 +132,13 @@ def _sync_once(config, token, session=None, settle_seconds=2):
         content = stable_read(config['excel_path'], settle_seconds)
         digest = hashlib.sha256(content).hexdigest()
         if status.get('file_hash') == digest and not status.get('resend_required'):
-            return 'H/W 변경 없음' if status.get('mode') in ('hw','hw86') else '변경 없음' if status.get('pending_status') == 'applied' or status.get('mode') in ('pending_cpo','process15') else '시트 전송 완료 · PENDING 열 연결 설정 필요'
+            return 'H/W 변경 없음' if status.get('mode') in ('hw','hw86') else '변경 없음' if status.get('pending_status') == 'applied' or status.get('mode') in ('pending_cpo','process15','process45') else '시트 전송 완료 · PENDING 열 연결 설정 필요'
         headers.update({'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'If-Match': str(status['revision']), 'X-Content-SHA256': digest})
         response = session.post(config['server_url'] + '/v1/source/workbook', headers=headers, data=content, timeout=(10, 120), allow_redirects=False)
         result = check_response(response)
         if result.get('mode') in ('hw','hw86'):
             return f"H/W 전송 완료 · 측정 기록 {result.get('hw_records', 0)}건 반영"
-        if result.get('mode') == 'process15':
+        if result.get('mode') in ('process15','process45'):
             return f"공정 Map 전송 완료 · {result.get('process_records',0)}건 반영"
         if result.get('mode') == 'pending_cpo':
             return f"8G PENDING 전송 완료 · {result.get('pending_records', 0)}건 반영"
@@ -198,6 +207,8 @@ def main():
         jobs.append(('8.6G H/W', {**config, 'excel_path':config['hw86_excel_path'], 'source_id':config['hw86_source_id']}))
     if config.get('process15_excel_path'):
         jobs.append(('15호기 공정 Map',{**config,'excel_path':config['process15_excel_path'],'source_id':config['process15_source_id']}))
+    if config.get('process45_excel_path'):
+        jobs.append(('45호기 공정 Map',{**config,'excel_path':config['process45_excel_path'],'source_id':config['process45_source_id']}))
     with requests.Session() as session:
         while True:
             code = 0

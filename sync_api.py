@@ -25,6 +25,7 @@ from pending_octa import parse_pending, SCHEMA_VERSION as PENDING_SCHEMA
 from pending_cpo import parse_cpo, SCHEMA_VERSION as CPO_SCHEMA
 from hw86_excel import parse_hw86, SCHEMA_VERSION as HW86_SCHEMA
 from process_map import parse_process, SCHEMA_VERSION as PROCESS_SCHEMA
+from process45 import parse_process45, SCHEMA_VERSION as PROCESS45_SCHEMA
 
 
 def load_mapping(raw):
@@ -32,7 +33,7 @@ def load_mapping(raw):
         mapping = json.loads(raw or '{}')
         if not isinstance(mapping, dict):
             raise ValueError()
-        if mapping.get('mode', 'pending') not in ('pending', 'hw', 'pending_octa', 'pending_cpo', 'hw86', 'process15'):
+        if mapping.get('mode', 'pending') not in ('pending', 'hw', 'pending_octa', 'pending_cpo', 'hw86', 'process15', 'process45'):
             raise ValueError()
         if not isinstance(mapping.get('pending_sheet', 'PENDING'), str):
             raise ValueError()
@@ -67,6 +68,10 @@ def create_app(repository=None, token=None, source_id=None, mapping=None, source
             raise ValueError('소스 ID 형식을 확인해주세요.')
         configurations[key] = load_mapping(json.dumps(value))
 
+    # Dedicated authenticated source for the five-sheet 45-unit workbook.
+    # Explicit administrator configurations take precedence.
+    configurations.setdefault('process-45', {'mode': 'process45'})
+
     def source_config(request):
         selected = request.headers.get('x-sync-source', source_id)
         if selected not in configurations:
@@ -76,6 +81,7 @@ def create_app(repository=None, token=None, source_id=None, mapping=None, source
         if config.get('mode') == 'pending_cpo':versions['cpo_parser'] = CPO_SCHEMA
         if config.get('mode') == 'hw86':versions['hw86_parser'] = HW86_SCHEMA
         if config.get('mode') == 'process15':versions['process_parser'] = PROCESS_SCHEMA
+        if config.get('mode') == 'process45':versions['process45_parser'] = PROCESS45_SCHEMA
         version = hashlib.sha256(json.dumps(versions, sort_keys=True).encode()).hexdigest()
         return selected, config, version
 
@@ -140,6 +146,9 @@ def create_app(repository=None, token=None, source_id=None, mapping=None, source
             process = None
             if mapping.get('mode') == 'hw86':
                 hw86 = await run_in_threadpool(parse_hw86, content)
+                previews, pending, warning = {}, None, None
+            elif mapping.get('mode') == 'process45':
+                process = await run_in_threadpool(parse_process45, content)
                 previews, pending, warning = {}, None, None
             elif mapping.get('mode') == 'process15':
                 process = await run_in_threadpool(parse_process, content)
