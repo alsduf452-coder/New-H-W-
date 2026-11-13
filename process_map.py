@@ -66,5 +66,25 @@ def link_measurement(run,measurements,kind):
     if any(not run.get(f) for f in fields):return None,'공정 기록 S/N 확인 필요'
     matching=[r for r in same if all(serial(r.get(f))==serial(run[f]) for f in fields)]
     if not matching:return None,f'{latest} 최근 측정 S/N 불일치 · 연결 확인 필요'
+    # Operator confirmed on 2026-11-13: the 2025-08-16 A run used
+    # the 2025-08-13 post-CSD measurements. Match full dates, workbook
+    # block, recipe, both serials and measurement identity; never use row order.
+    if len(matching)>1 and (
+        run.get('date')=='2025-08-16' and run.get('chamber')=='A'
+        and run.get('source_cell')=='AD12' and run.get('recipe')=='PPPLS5K'
+        and serial(run.get('diffuser_sn'))=='DIDDBB2002'
+        and serial(run.get('susceptor_sn'))=='ASUBBBB2401'
+        and latest=='2025-08-13'
+    ):
+        approved={'Spacing':('Spacing:B33',33),
+                  'Diffuser Flatness':('Diff Flatness:C24',24)}.get(kind)
+        if approved:
+            selected=[r for r in matching if r.get('id')==approved[0]
+                      and r.get('source_row')==approved[1]
+                      and serial(r.get('diffuser_sn'))=='DIDDBB2002'
+                      and serial(r.get('susceptor_sn'))=='ASUBBBB2401'
+                      and 'CSD' in text(r.get('reason')).upper()
+                      and '40' in text(r.get('reason'))]
+            if len(selected)==1:return selected[0],'2025-08-13 CSD 조정 후 · 사용자 확인 연결'
     if len(matching)!=1:return None,f'{latest} 동일 날짜 기록 {len(matching)}개 · 연결 확인 필요'
     return matching[0],''
