@@ -69,7 +69,7 @@ def link_measurement(run,measurements,kind):
     # Operator confirmed on 2026-11-13: the 2025-08-16 A run used
     # the 2025-08-13 post-CSD measurements. Match full dates, workbook
     # block, recipe, both serials and measurement identity; never use row order.
-    if len(matching)>1 and (
+    if (
         run.get('date')=='2025-08-16' and run.get('chamber')=='A'
         and run.get('source_cell')=='AD12' and run.get('recipe')=='PPPLS5K'
         and serial(run.get('diffuser_sn'))=='DIDDBB2002'
@@ -86,5 +86,6 @@ def link_measurement(run,measurements,kind):
                       and 'CSD' in text(r.get('reason')).upper()
                       and '40' in text(r.get('reason'))]
             if len(selected)==1:return selected[0],'2025-08-13 CSD 조정 후 · 사용자 확인 연결'
+            return None,'2025-08-13 CSD 조정 후 승인 기록 누락/중복 · 연결 확인 필요'
     if len(matching)!=1:return None,f'{latest} 동일 날짜 기록 {len(matching)}개 · 연결 확인 필요'
     return matching[0],''
