@@ -32,7 +32,9 @@ class ConfirmedLinks(unittest.TestCase):
         wrong={**self.after,'date':'2025-08-15','diffuser_sn':'WRONG'}
         self.assertIsNone(link_measurement(self.run,[self.base,self.after,wrong],'Spacing')[0])
     def test_unambiguous_normal_match_preserved(self):
-        self.assertEqual(link_measurement(self.run,[self.base],'Spacing')[0]['id'],'Spacing:B20')
+        self.assertEqual(link_measurement({**self.run,'source_cell':'other'},[self.base],'Spacing')[0]['id'],'Spacing:B20')
+        self.assertIsNone(link_measurement(self.run,[self.base],'Spacing')[0])
+        self.assertEqual(link_measurement(self.run,[self.after],'Spacing')[0]['id'],'Spacing:B33')
 
 if __name__=='__main__':unittest.main()
 
