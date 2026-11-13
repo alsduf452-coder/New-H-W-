@@ -1,27 +1,18 @@
 """45-unit comparison from the five PC sheets, without placeholder results."""
-import altair as alt
 import pandas as pd
 import streamlit as st
 from process45 import KINDS, link_process45, numeric
+from classic_cloud.visuals import diagram_svg
+from classic_cloud.process_views import map_html
 
 
-def measurement_chart(grid, title, spacing=False):
-    labels = [['①','⑥','②'], ['⑨','⑤','⑦'], ['④','⑧','③']]
-    rows = [{'row': i, 'column': j, 'value': value,
-             'label': (labels[i][j]+' · ' if spacing else '')+f'{value:g}'}
-            for i, line in enumerate(grid) for j, value in enumerate(line) if numeric(value)]
-    if not rows:
+def measurement_chart(grid, title, spacing=False, process=False):
+    if not any(numeric(value) for line in grid for value in line):
         return
-    frame = pd.DataFrame(rows)
-    base = alt.Chart(frame).encode(
-        x=alt.X('column:O', axis=None, sort=list(range(len(grid[0])))),
-        y=alt.Y('row:O', axis=None, sort=list(range(len(grid)))))
-    heat = base.mark_rect(stroke='#cbd5e1', strokeWidth=1).encode(
-        color=alt.Color('value:Q', scale=alt.Scale(scheme='redblue'), legend=None),
-        tooltip=[alt.Tooltip('value:Q', title='측정값')])
-    text = base.mark_text(color='#17324d', fontSize=13).encode(text='label:N')
-    chart = (heat+text).properties(height=max(210, len(grid)*38))
-    st.altair_chart(chart, width='stretch', alt=title+' 원본 행·열 순서의 측정값')
+    # Reuse the 15-unit renderers. The 45-unit sheets place G/V at
+    # the top of their 7x5 flatness grid, so retain that orientation.
+    html = map_html(grid).replace('Data 없음', '—') if process else diagram_svg(grid, spacing, orientation='rows')
+    st.markdown(html, unsafe_allow_html=True)
 
 
 def process45_panel(snapshot):
@@ -67,7 +58,7 @@ def process45_panel(snapshot):
         with left:
             st.subheader(run['recipe']+' 공정 Map')
             st.caption('▲ G/V 측 · ▼ Window 측')
-            measurement_chart(run['grid'], run['recipe']+' 공정 Map')
+            measurement_chart(run['grid'], run['recipe']+' 공정 Map', process=True)
         with right:
             st.subheader('공정 결과')
             if metrics:

@@ -107,7 +107,8 @@ def test_screen_only_actual_results_and_pc_switch():
     script='from classic_cloud.process45_views import process45_panel\nprocess45_panel('+repr({'previews':{'__process_data__':data}})+')'
     app=AppTest.from_string(script).run(timeout=20)
     assert not app.exception
-    assert len(app.get('vega_lite_chart'))==4
+    assert len([m for m in app.markdown if '<svg ' in m.value])==3
+    assert any('<table ' in m.value for m in app.markdown)
     assert 'Data 없음' not in str(app)
     app.selectbox[0].select('E').run(timeout=20)
     assert not app.exception
@@ -134,3 +135,20 @@ def test_45_job_in_both_workers_and_source_id_validation(tmp_path, monkeypatch):
     assert calls[-1]=='process-45'
     path.write_text(path.read_text()+"process45_source_id='local-excel'\n")
     with pytest.raises(SyncError):load_config(path)
+
+
+def test_45_renderer_keeps_original_grid_and_15_default_orientation():
+    from classic_cloud.visuals import diagram_svg
+    grid=[[-i*5-j for j in range(5)] for i in range(7)]
+    html=diagram_svg(grid,orientation='rows')
+    assert 'R7C5' in html and 'R5C7' not in html
+    assert '▲ G/V 측' in html and '▼ Window 측' in html
+    assert '>-34</text>' in html and '>0</text>' in html
+    assert 'G/V · Col 1' in diagram_svg(grid)
+    from classic_cloud.process45_views import measurement_chart
+    from streamlit.testing.v1 import AppTest
+    script='from classic_cloud.process45_views import measurement_chart\nmeasurement_chart([[0,None],[-2,3]],"Map",process=True)'
+    app=AppTest.from_string(script).run(timeout=20)
+    assert not app.exception
+    assert 'Data 없음' not in app.markdown[0].value
+    assert '>0</td>' in app.markdown[0].value and '>-2</td>' in app.markdown[0].value
