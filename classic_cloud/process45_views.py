@@ -12,6 +12,11 @@ def measurement_chart(grid, title, spacing=False, process=False):
     # Match the 15-unit 5x7 cells without changing stored measurements.
     # Original row/column labels follow each value through the display transpose.
     html = map_html(grid).replace('Data 없음', '—') if process else diagram_svg(grid, spacing, transpose=not spacing)
+    if process:
+        html = ('<div style="display:grid;grid-template-columns:28px minmax(0,1fr) 28px;align-items:center;gap:8px">'
+                '<div style="justify-self:center;writing-mode:vertical-rl;transform:rotate(180deg);white-space:nowrap;color:#075985;font-size:13px">G/V 측</div>'
+                '<div style="min-width:0">'+html+'</div>'
+                '<div style="justify-self:center;writing-mode:vertical-rl;white-space:nowrap;color:#075985;font-size:13px">Window 측</div></div>')
     st.markdown(html, unsafe_allow_html=True)
 
 
@@ -56,7 +61,6 @@ def process45_panel(snapshot):
         left, right = st.columns([3, 2])
         with left:
             st.subheader(run['recipe']+' 공정 Map')
-            st.caption('▲ G/V 측 · ▼ Window 측')
             measurement_chart(run['grid'], run['recipe']+' 공정 Map', process=True)
         with right:
             st.subheader('공정 결과')
