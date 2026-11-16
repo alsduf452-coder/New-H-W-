@@ -38,7 +38,6 @@ def process_panel(process_snapshot,hw_snapshot):
             if linked:
                 st.caption('H/W 측정일 '+linked['date']+' · '+linked['id'])
                 st.markdown(diagram_svg(linked['grid'],kind=='Spacing',show_position_labels=False),unsafe_allow_html=True)
-                st.caption(linked['reason'])
             else:
                 st.markdown('<div style="height:250px;border:1px solid #cbd5e1;display:flex;align-items:center;justify-content:center">연결 확인 필요</div>',unsafe_allow_html=True)
                 st.caption(reason)
