@@ -151,7 +151,7 @@ def content():
         if state.get('pending_status')=='conflict':
             st.warning('기존 앱 DB 반영에 충돌이 있습니다. 새 앱은 가장 최근 수신한 Excel 스냅샷을 표시합니다. 기존 앱의 충돌 내역을 별도로 확인해주세요.')
     if page=='H/W · 공정 Map':
-        if hw_unit=='45호기':process45_views.process45_panel(current.get('process',{}))
+        if hw_unit=='45호기':process45_views.process45_panel(current.get('process',{}),current['hw'])
         else:process_views.process_panel(current.get('process',{}),current['hw'])
     elif page=='PENDING 현황':views.pending(current['pending'],filters,generation)
     elif page=='PENDING List REV관리':views.revisions(current['pending'],generation)
@@ -159,4 +159,5 @@ def content():
     else:views.hardware(current['hw'],chamber,section,flatness,query,generation+' · '+hw_unit)
 
 content()
+
 

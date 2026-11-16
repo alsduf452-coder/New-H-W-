@@ -133,3 +133,24 @@ def link_process45(run, measurements, kind):
     if any(not run.get(field) or not measured.get(field) or serial(run[field]) != serial(measured[field]) for field in fields):
         return None, 'H/W 측정 S/N 확인 필요'
     return measured, ''
+
+
+def link_spacing_history(run, measurements, hw_measurements):
+    """Use latest eligible spacing, preserving the evaluation snapshot on ties."""
+    embedded, reason = link_process45(run, measurements, 'Spacing')
+    candidates = [m for m in hw_measurements
+                  if m['kind'] == 'Spacing' and m['chamber'] == run['chamber']
+                  and m['date'] <= run['date']
+                  and any(numeric(v) for row in m['grid'] for v in row)
+                  and all(serial(run.get(f)) and serial(run.get(f)) == serial(m.get(f))
+                          for f in ('diffuser_sn', 'susceptor_sn'))]
+    if not candidates:
+        return embedded, reason
+    latest = max(m['date'] for m in candidates)
+    if embedded and embedded['date'] >= latest:
+        return embedded, ''
+    matches = [m for m in candidates if m['date'] == latest]
+    if len(matches) != 1:
+        return None, '같은 날짜의 Spacing 측정 기록이 여러 개입니다. 연결 확인 필요'
+    return matches[0], ''
+

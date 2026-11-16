@@ -1,7 +1,7 @@
 """45-unit comparison from the five PC sheets, without placeholder results."""
 import pandas as pd
 import streamlit as st
-from process45 import KINDS, link_process45, numeric
+from process45 import KINDS, link_process45, link_spacing_history, numeric
 from classic_cloud.visuals import diagram_svg
 from classic_cloud.process_views import map_html
 
@@ -30,7 +30,7 @@ def measurement_chart(grid, title, spacing=False, process=False):
     st.markdown(html, unsafe_allow_html=True)
 
 
-def process45_panel(snapshot):
+def process45_panel(snapshot, hw_snapshot=None):
     st.header('6G · 45호기 H/W 형상 · 공정 Map 비교')
     data = snapshot.get('previews', {}).get('__process_data__')
     if not data or data.get('equipment') != '45호기':
@@ -49,18 +49,22 @@ def process45_panel(snapshot):
         return run['date']+' · '+run['recipe']+suffix
     selected = st.selectbox('공정 평가 기록', list(by_id), format_func=label, key='process45_run_'+chamber)
     run = by_id[selected]
+    hw_measurements = (hw_snapshot or {}).get('previews', {}).get('__hw_data__', {}).get('measurements', [])
     st.caption('평가일 '+run['date']+' · PC '+chamber+' · '+run['recipe'])
     st.caption('Diffuser S/N: '+(run['diffuser_sn'] or '미기재')+' · Susceptor S/N: '+(run['susceptor_sn'] or '미기재'))
     for col, kind in zip(st.columns(3), KINDS):
         with col:
             st.subheader(kind)
-            measured, reason = link_process45(run, data['measurements'], kind)
+            measured, reason = (link_spacing_history(run, data['measurements'], hw_measurements)
+                                if kind == 'Spacing' else link_process45(run, data['measurements'], kind))
             if measured:
                 st.caption('H/W 측정일 '+measured['date'])
+                if kind == 'Spacing' and measured.get('source_sheet', '').startswith('Spacing'):
+                    st.caption('H/W 이력 · '+measured['source_sheet'])
                 measurement_chart(measured['grid'], kind, kind == 'Spacing')
             else:
                 st.caption(reason)
-    st.caption('선택한 평가 블록의 측정일·S/N 기준 · 공정 평가일 이후 측정값 제외')
+    st.caption('Spacing: 공정 평가일 이전·당일의 S/N 일치 최신 측정값 · Flatness: 평가 블록 기준 · 미래 측정값 제외')
     has_map = any(numeric(v) for row in run['grid'] for v in row)
     metrics = []
     for key, value in run['metrics'].items():
@@ -78,3 +82,4 @@ def process45_panel(snapshot):
     elif metrics:
         st.subheader('공정 결과')
         st.table(pd.DataFrame(metrics).set_index('항목'), alt='실제 값이 있는 공정 결과 항목')
+

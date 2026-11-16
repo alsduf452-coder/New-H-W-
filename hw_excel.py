@@ -9,7 +9,7 @@ from openpyxl import load_workbook
 from openpyxl.utils.cell import range_boundaries, get_column_letter
 from domain import ValidationError
 
-SCHEMA_VERSION = 'octa-hw-2'
+SCHEMA_VERSION = 'octa-hw-3'
 REQUIRED = ('이력', 'Spacing', 'Diff Flatness', 'Susc Flatness')
 CHAMBERS = tuple('ABCDE')
 
@@ -50,7 +50,8 @@ def parse_hw(content):
         if any(name not in book.sheetnames for name in REQUIRED):
             raise ValidationError('H/W 양식에는 이력, Spacing, Diff Flatness, Susc Flatness 시트가 필요합니다.')
         data = {}
-        for name in REQUIRED:
+        extra_spacing = [name for name in book.sheetnames if re.sub(r'[\s_]', '', name).casefold() == 'spacing1']
+        for name in (*REQUIRED, *extra_spacing):
             sheet = book[name]
             if (sheet.max_row or 0) > 5000 or (sheet.max_column or 0) > 200:
                 raise ValidationError(f'{name}: H/W 해석 범위(5,000행·200열)를 초과합니다.')
@@ -98,7 +99,10 @@ def parse_hw(content):
             serials = {part: str(cell('이력', r, c)).strip() for part, c in zip(parts, range(5, 13)) if cell('이력', r, c) not in (None, '')}
             history.append({'chamber': chamber, 'date': when, 'reason': merged_reasons.get(r, cell('이력', r, 4)) or '', 'parts': serials, 'source': f'이력!B{r}:L{r}', 'source_row': r})
         measurements = []
-        for sheet_name, kind in [('Spacing', 'Spacing'), ('Diff Flatness', 'Diffuser Flatness'), ('Susc Flatness', 'Susceptor Flatness')]:
+        spacing_dates = set()
+        measurement_sheets = [('Spacing', 'Spacing'), ('Diff Flatness', 'Diffuser Flatness'), ('Susc Flatness', 'Susceptor Flatness')]
+        measurement_sheets.extend((name, 'Spacing') for name in extra_spacing)
+        for sheet_name, kind in measurement_sheets:
             is_spacing = kind == 'Spacing'
             anchors = {2 + 9*i if is_spacing else 3 + 9*i: chamber for i, chamber in enumerate(CHAMBERS)}
             # Verify chamber bands instead of silently assigning data to a changed layout.
@@ -114,7 +118,15 @@ def parse_hw(content):
                     if c not in anchors:
                         raise ValidationError(f'{sheet_name}!{get_column_letter(c)}{r}: 지원하지 않는 측정 위치입니다.')
                     chamber = anchors[c]
+                    supplemental = sheet_name in extra_spacing
+                    # Empty templates in the supplementary sheet are not measurements.
+                    if supplemental and not any(numeric(cell(sheet_name, r+4+2*i, c+1+2*j)) for i in range(3) for j in range(3)):
+                        continue
                     when = measured_date(raw(sheet_name, r, c+1), f'{sheet_name}!{get_column_letter(c+1)}{r}')
+                    # Existing Spacing always wins, even if the supplementary
+                    # sheet repeats a different S/N or values on the same day.
+                    if supplemental and (chamber, when) in spacing_dates:
+                        continue
                     if cell(sheet_name, r+1, c) != 'Diff. S/N' or cell(sheet_name, r+1, c+3) != 'Susc. S/N':
                         raise ValidationError(f'{sheet_name} {r}행: S/N 배치가 변경됐습니다.')
                     if is_spacing:
@@ -135,6 +147,8 @@ def parse_hw(content):
                     if any(v not in (None, '') and not numeric(v) for line in grid for v in line):
                         warnings.append(f'{record["id"]}: 숫자가 아닌 측정값은 원문 표시하고 통계에서 제외했습니다.')
                     measurements.append(record)
+                    if is_spacing:
+                        spacing_dates.add((chamber, when))
         if not history or any(not any(m['kind']==kind for m in measurements) for kind in ('Spacing','Diffuser Flatness','Susceptor Flatness')):
             raise ValidationError('H/W 이력 또는 측정 기록이 없습니다. 기존 데이터를 유지합니다.')
         installed = {chamber: {} for chamber in CHAMBERS}
@@ -144,3 +158,4 @@ def parse_hw(content):
         return {'schema': SCHEMA_VERSION, 'history': history, 'measurements': measurements, 'installed': installed, 'parts': parts, 'warnings': warnings}
     finally:
         book.close()
+
