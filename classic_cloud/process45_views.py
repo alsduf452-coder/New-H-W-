@@ -77,6 +77,8 @@ def process45_panel(snapshot, hw_snapshot=None):
             if metrics:
                 st.table(pd.DataFrame(metrics).set_index('항목'), alt='실제 값이 있는 공정 결과 항목')
     elif metrics:
-        st.subheader('공정 결과')
-        st.table(pd.DataFrame(metrics).set_index('항목'), alt='실제 값이 있는 공정 결과 항목')
+        left, _ = st.columns([1, 1])
+        with left:
+            st.subheader('공정 결과')
+            st.table(pd.DataFrame(metrics).set_index('항목'), alt='실제 값이 있는 공정 결과 항목')
 
