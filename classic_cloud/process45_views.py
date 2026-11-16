@@ -11,7 +11,7 @@ def measurement_chart(grid, title, spacing=False, process=False):
         return
     # Match the 15-unit 5x7 cells without changing stored measurements.
     # Original row/column labels follow each value through the display transpose.
-    html = map_html(grid).replace('Data 없음', '—') if process else diagram_svg(grid, spacing, transpose=not spacing)
+    html = map_html(grid).replace('Data 없음', '—') if process else diagram_svg(grid, spacing, transpose=not spacing, show_position_labels=False)
     if process:
         html = ('<div style="display:grid;grid-template-columns:28px minmax(0,1fr) 28px;align-items:center;gap:8px">'
                 '<div style="justify-self:center;writing-mode:vertical-rl;transform:rotate(180deg);white-space:nowrap;color:#075985;font-size:13px">G/V 측</div>'
@@ -48,7 +48,6 @@ def process45_panel(snapshot):
             if measured:
                 st.caption('H/W 측정일 '+measured['date'])
                 measurement_chart(measured['grid'], kind, kind == 'Spacing')
-                st.caption('Diffuser S/N: '+measured['diffuser_sn']+' · Susceptor S/N: '+measured['susceptor_sn'])
             else:
                 st.caption(reason)
     st.caption('선택한 평가 블록의 측정일·S/N 기준 · 공정 평가일 이후 측정값 제외')

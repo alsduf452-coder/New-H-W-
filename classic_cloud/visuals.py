@@ -106,8 +106,8 @@ def measurement_table(grid, spacing=False):
     return '<div class="classic-table-wrap"><table class="classic-table classic-measure"><thead><tr><th>구분</th>'+''.join('<th>Col '+str(c+1)+'</th>' for c in range(cols))+'</tr></thead><tbody>'+''.join(rows)+'</tbody></table></div>'
 
 
-def diagram_svg(grid, spacing=False, limits=None, orientation='columns', transpose=False):
-    if spacing:return spacing_diagram_svg(grid)
+def diagram_svg(grid, spacing=False, limits=None, orientation='columns', transpose=False, show_position_labels=True):
+    if spacing:return spacing_diagram_svg(grid,show_position_labels=show_position_labels)
     # Display-only transpose: original (row, column) labels stay with their values.
     # For the 45-unit sheet, top G/V becomes left G/V; bottom Window becomes right.
     if transpose:
@@ -129,7 +129,8 @@ def diagram_svg(grid, spacing=False, limits=None, orientation='columns', transpo
             x,y=60+j*width,65+i*height
             label=f'P{points[i][j]}' if spacing else (f'R{j+1}C{i+1}' if transpose else f'R{i+1}C{j+1}')
             ink='#475569' if not numeric(v) else '#ffffff'
-            out.append(f'<rect x="{x}" y="{y}" width="{width}" height="{height}" fill="{color}" stroke="#cbd5e1"/><text x="{x+4}" y="{y+13}" font-size="10" fill="{ink}">{label}</text><text x="{x+width/2}" y="{y+height/2+7}" text-anchor="middle" font-size="19" font-weight="700" fill="{ink}">{escape(number(v))}</text>')
+            position_text=f'<text x="{x+4}" y="{y+13}" font-size="10" fill="{ink}">{label}</text>' if show_position_labels else ''
+            out.append(f'<rect x="{x}" y="{y}" width="{width}" height="{height}" fill="{color}" stroke="#cbd5e1"/>{position_text}<text x="{x+width/2}" y="{y+height/2+7}" text-anchor="middle" font-size="19" font-weight="700" fill="{ink}">{escape(number(v))}</text>')
     if transpose:
         out=[part.replace('G/V · Col 1','G/V · 원본 Row 1').replace('Window · Col 7','Window · 원본 Row 7') for part in out]
     return ''.join(out)+'</svg>'
@@ -158,7 +159,7 @@ def spacing_table_html(grid):
     return '<div class="spacing-values">'+''.join(cells)+'</div>'
 
 
-def spacing_diagram_svg(grid,table_mode=False):
+def spacing_diagram_svg(grid,table_mode=False,show_position_labels=True):
     values=spacing_values(grid)
     from html import escape
     svg=['<svg xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Spacing 9포인트 위치도" viewBox="0 0 700 510" class="measurement-svg">',
@@ -174,7 +175,7 @@ def spacing_diagram_svg(grid,table_mode=False):
             left=82+x*185;top=90+y*112;v=values[point-1]
             stroke='#0891b2' if point==5 else '#94a3b8'
             svg.append(f'<rect x="{left}" y="{top}" width="166" height="86" rx="9" fill="{"#e0f2fe" if point==5 else "#ffffff"}" stroke="{stroke}" stroke-width="{3 if point==5 else 1.5}"/>')
-            svg.append(f'<text x="{left+83}" y="{top+21}" text-anchor="middle" font-size="13" fill="#334155">P{point} · {SPACING_LABELS[point]}</text>')
+            svg.append(f'<text x="{left+83}" y="{top+21}" text-anchor="middle" font-size="13" fill="#334155">{('P'+str(point)+' · ') if show_position_labels else ''}{SPACING_LABELS[point]}</text>')
             svg.append(f'<text x="{left+83}" y="{top+49}" text-anchor="middle" font-size="25" font-weight="700" fill="#172b4d">{escape(measurement_number(v))}</text>')
             delta='—' if not numeric(v) else f'{v-885:+.1f} mils'
             color='#64748b' if not numeric(v) else '#1d4ed8' if v<885 else '#b91c1c' if v>885 else '#047857'
