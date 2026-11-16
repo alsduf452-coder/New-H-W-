@@ -106,7 +106,7 @@ def measurement_table(grid, spacing=False):
     return '<div class="classic-table-wrap"><table class="classic-table classic-measure"><thead><tr><th>구분</th>'+''.join('<th>Col '+str(c+1)+'</th>' for c in range(cols))+'</tr></thead><tbody>'+''.join(rows)+'</tbody></table></div>'
 
 
-def diagram_svg(grid, spacing=False, limits=None, orientation='columns', transpose=False, show_position_labels=True):
+def diagram_svg(grid, spacing=False, limits=None, orientation='columns', transpose=False, show_position_labels=True, match_spacing_size=False):
     if spacing:return spacing_diagram_svg(grid,show_position_labels=show_position_labels)
     # Display-only transpose: original (row, column) labels stay with their values.
     # For the 45-unit sheet, top G/V becomes left G/V; bottom Window becomes right.
@@ -115,18 +115,23 @@ def diagram_svg(grid, spacing=False, limits=None, orientation='columns', transpo
         orientation='columns'
     values=[v for row in grid for v in row if numeric(v)]
     low,high=limits or ((min(values),max(values)) if values else (0,0))
-    nr,nc=len(grid),len(grid[0]);width=560/nc;height=310/nr
+    nr,nc=len(grid),len(grid[0]);width=(620 if match_spacing_size else 560)/nc;height=(420 if match_spacing_size else 310)/nr
     out=['<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 680 440" style="width:100%;height:auto;display:block" role="img" aria-label="측정 위치도">','<rect x="40" y="40" width="600" height="360" rx="20" fill="#d9e2ef" stroke="#64748b" stroke-width="3"/>']
     if spacing:out+=['<text x="340" y="25" text-anchor="middle" fill="#075985">G/V 측</text>','<text x="340" y="425" text-anchor="middle" fill="#92400e">Window 측</text>']
     elif orientation=='rows':out+=['<text x="340" y="25" text-anchor="middle" fill="#075985">▲ G/V 측</text>','<text x="340" y="425" text-anchor="middle" fill="#92400e">▼ Window 측</text>']
     else:out+=['<text x="20" y="220" transform="rotate(-90 20 220)" text-anchor="middle" fill="#075985">G/V · Col 1</text>','<text x="663" y="220" transform="rotate(90 663 220)" text-anchor="middle" fill="#92400e">Window · Col 7</text>']
+    if match_spacing_size:
+        out=['<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 510" class="measurement-svg" role="img" aria-label="Flatness 측정 위치도">',
+             '<rect x="40" y="45" width="620" height="420" rx="10" fill="#d9e2ef" stroke="#64748b" stroke-width="3"/>',
+             '<text x="20" y="255" transform="rotate(-90 20 255)" text-anchor="middle" fill="#075985" font-size="18">G/V 측</text>',
+             '<text x="680" y="255" transform="rotate(90 680 255)" text-anchor="middle" fill="#92400e" font-size="18">Window 측</text>']
     points=[[1,6,2],[9,5,7],[4,8,3]]
     for i,row in enumerate(grid):
         for j,v in enumerate(row):
             ratio=0.5 if high==low else (v-low)/(high-low) if numeric(v) else 0
             ratio=min(1,max(0,ratio))
             color='#e2e8f0' if not numeric(v) else '#'+''.join(f'{round(a+(b-a)*ratio):02x}' for a,b in zip((37,99,235),(239,68,68)))
-            x,y=60+j*width,65+i*height
+            x,y=(40 if match_spacing_size else 60)+j*width,(45 if match_spacing_size else 65)+i*height
             label=f'P{points[i][j]}' if spacing else (f'R{j+1}C{i+1}' if transpose else f'R{i+1}C{j+1}')
             ink='#475569' if not numeric(v) else '#ffffff'
             position_text=f'<text x="{x+4}" y="{y+13}" font-size="10" fill="{ink}">{label}</text>' if show_position_labels else ''
