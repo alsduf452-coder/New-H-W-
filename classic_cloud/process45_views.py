@@ -59,12 +59,9 @@ def process45_panel(snapshot, hw_snapshot=None):
                                 if kind == 'Spacing' else link_process45(run, data['measurements'], kind))
             if measured:
                 st.caption('H/W 측정일 '+measured['date'])
-                if kind == 'Spacing' and measured.get('source_sheet', '').startswith('Spacing'):
-                    st.caption('H/W 이력 · '+measured['source_sheet'])
                 measurement_chart(measured['grid'], kind, kind == 'Spacing')
             else:
                 st.caption(reason)
-    st.caption('Spacing: 공정 평가일 이전·당일의 S/N 일치 최신 측정값 · Flatness: 평가 블록 기준 · 미래 측정값 제외')
     has_map = any(numeric(v) for row in run['grid'] for v in row)
     metrics = []
     for key, value in run['metrics'].items():

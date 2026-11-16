@@ -36,12 +36,11 @@ def process_panel(process_snapshot,hw_snapshot):
             st.subheader(kind)
             linked,reason=link_measurement(run,measurements,kind)
             if linked:
-                st.caption('H/W 측정일 '+linked['date']+' · '+linked['id'])
+                st.caption('H/W 측정일 '+linked['date'])
                 st.markdown(diagram_svg(linked['grid'],kind=='Spacing',show_position_labels=False,match_spacing_size=True),unsafe_allow_html=True)
             else:
                 st.markdown('<div style="height:250px;border:1px solid #cbd5e1;display:flex;align-items:center;justify-content:center">연결 확인 필요</div>',unsafe_allow_html=True)
                 st.caption(reason)
-    st.caption('평가일 당일/이전 최근 측정일 기준 · 미래 측정값 제외 · S/N 불일치/동일 날짜 중복은 자동 연결하지 않습니다.')
     st.markdown(process_comparison_html(run),unsafe_allow_html=True)
     st.caption('출처: Unif 결과 데이터!'+run['source_cell']+' · 좌표 숫자는 표시하지 않습니다. Unif.는 Excel 원본값입니다.')
 
