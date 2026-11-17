@@ -1,6 +1,7 @@
 """45-unit comparison from the five PC sheets, without placeholder results."""
 import pandas as pd
 import streamlit as st
+from classic_cloud.evaluation_compare import comparison_navigation, comparison_panel
 from process45 import KINDS, link_process45, link_spacing_history, numeric
 from classic_cloud.visuals import diagram_svg
 from classic_cloud.process_views import map_html
@@ -42,13 +43,16 @@ def process45_panel(snapshot, hw_snapshot=None):
     if not runs:
         st.info('조회할 공정 결과가 없습니다.')
         return
+    comparison_mode = comparison_navigation('45', chamber)
     by_id = {r['id']: r for r in runs}
     def label(identifier):
         run = by_id[identifier]
         suffix = ' · MT '+run['mt_date'] if run['mt_date'] and run['mt_date'] != run['date'] else ''
-        return run['date']+' · '+run['recipe']+suffix
+        return run['date']+' · '+run['recipe']+suffix+' · '+run['source_cell']
     selected = st.selectbox('공정 평가 기록', list(by_id), format_func=label, key='process45_run_'+chamber)
     run = by_id[selected]
+    if comparison_panel('45', chamber, runs, run, data, hw_snapshot or {}, comparison_mode):
+        return
     hw_measurements = (hw_snapshot or {}).get('previews', {}).get('__hw_data__', {}).get('measurements', [])
     st.caption('평가일 '+run['date']+' · PC '+chamber+' · '+run['recipe'])
     st.caption('Diffuser S/N: '+(run['diffuser_sn'] or '미기재')+' · Susceptor S/N: '+(run['susceptor_sn'] or '미기재'))

@@ -1,14 +1,15 @@
 from html import escape
 import pandas as pd
 import streamlit as st
+from classic_cloud.evaluation_compare import comparison_navigation, comparison_panel
 from process_map import link_measurement,KINDS
 from classic_cloud.visuals import diagram_svg,detail
 
 
-def map_html(grid):
+def map_html(grid, limits=None):
     values=[v for row in grid for v in row if v is not None]
     if not values:return '<div style="height:300px;border:1px solid #cbd5e1;background:#f1f5f9;display:flex;align-items:center;justify-content:center;font-size:24px">Data 없음</div>'
-    low,high=min(values),max(values);rows=[]
+    low,high=limits or (min(values),max(values));rows=[]
     for row in grid:
         cells=[]
         for v in row:
@@ -27,8 +28,11 @@ def process_panel(process_snapshot,hw_snapshot):
     chamber=st.selectbox('공정 PC',list('ABCDE'),key='process15_pc')
     runs=sorted([r for r in records if r['chamber']==chamber],key=lambda r:(r['date'],r['source_cell']),reverse=True)
     if not runs:st.info('평가 기록이 없습니다.');return
+    comparison_mode = comparison_navigation('15', chamber)
     by_id={r['id']:r for r in runs}
     run=by_id[st.selectbox('공정 평가 기록',list(by_id),format_func=lambda k:by_id[k]['date']+' · '+by_id[k]['recipe']+' · '+by_id[k]['source_cell'],key='process15_run_'+chamber)]
+    if comparison_panel('15', chamber, runs, run, data, hw_snapshot, comparison_mode):
+        return
     st.caption('평가일 '+run['date']+' · PC '+chamber+' · Recipe '+run['recipe']+' · Dep Time '+run['dep_time'])
     measurements=hw_snapshot.get('previews',{}).get('__hw_data__',{}).get('measurements',[])
     for col,kind in zip(st.columns(3),KINDS):
