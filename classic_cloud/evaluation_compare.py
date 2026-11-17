@@ -73,15 +73,23 @@ def comparison_html(unit, selected, data, hw, delta=False):
             conditions.append('<span'+(' class="eval-changed"' if changed else '')+'>'+escape(label+': '+str(value))+'</span>')
         cells.append('<section><h3>'+title+' · '+escape(run['date'])+'</h3><div class="eval-conditions">'+
                      ' · '.join(conditions)+'</div><small>평가 기록 '+escape(run.get('source_cell', ''))+'</small></section>')
+    hardware_cards = [[] for _ in selected]
+    hardware_details = [[] for _ in selected]
     for kind in KINDS:
         linked = [linked_measurement(unit, run, data, hw, kind) for run in selected]
         grids = [display_grid(unit, kind, m['grid']) if m else [] for m, _ in linked]
         scale = limits(grids)
-        for (measured, reason), grid in zip(linked, grids):
+        for index, ((measured, reason), grid) in enumerate(zip(linked, grids)):
             chart = diagram_svg(grid, kind == 'Spacing', limits=scale,
                                 show_position_labels=False, match_spacing_size=True) if measured and grid else placeholder('연결 확인 필요')
             caption = 'H/W 측정일 '+measured['date'] if measured else reason
-            cells.append('<section><h3>'+kind+'</h3><div class="eval-caption">'+escape(caption)+'</div>'+chart+'</section>')
+            card = ('<div class="eval-hw-card"><h4>'+kind+'</h4><div class="eval-caption">'+escape(caption)+'</div>'+chart+'</div>')
+            hardware_cards[index].append(card)
+            hardware_details[index].append(card)
+    for cards, details in zip(hardware_cards, hardware_details):
+        cells.append('<section class="eval-hardware"><div class="eval-hw-row">'+''.join(cards)+
+                     '</div><details class="eval-hw-detail"><summary>H/W 수치 크게 보기</summary>'+
+                     ''.join(details)+'</details></section>')
     grids = [run['grid'] for run in selected]
     shared = limits(grids)
     deltas = [difference(g, grids[0]) for g in grids]
@@ -114,7 +122,14 @@ def comparison_html(unit, selected, data, hw, delta=False):
     return '''<style>
     .eval-scroll{overflow-x:auto}.eval-grid{display:grid;gap:12px;align-items:stretch}
     .eval-grid section{min-width:0;border:1px solid #cbd5e1;border-radius:10px;padding:12px;background:#f8fafc}
-    .eval-grid h3{margin:0 0 8px}.eval-caption{color:#60758b;min-height:42px;font-size:13px}
+    .eval-grid h3{margin:0 0 8px}.eval-caption{color:#60758b;min-height:32px;font-size:11px;overflow-wrap:anywhere}
+    .eval-hw-row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;align-items:start}
+    .eval-hw-card{min-width:0}.eval-hw-card h4{font-size:12px!important;line-height:1.3;min-height:32px;margin:0 0 4px;padding:0}
+    .eval-hw-card svg{width:100%;height:auto;display:block}
+    .eval-hw-card .eval-empty{font-size:11px;text-align:center}
+    .eval-hw-detail{margin-top:8px}.eval-hw-detail summary{cursor:pointer;color:#365f88;font-size:12px}
+    .eval-hw-detail .eval-hw-card{margin:12px auto 0;max-width:560px}
+    .eval-hw-detail h4{font-size:16px!important;min-height:0}.eval-hw-detail .eval-caption{font-size:12px;min-height:24px}
     .eval-empty{aspect-ratio:700/510;border:1px solid #cbd5e1;display:flex;align-items:center;justify-content:center}
     .eval-map{display:grid;grid-template-columns:20px minmax(0,1fr) 20px;align-items:center;gap:5px}
     .eval-map table{border-collapse:collapse;margin:0;width:100%;table-layout:fixed;height:300px}
