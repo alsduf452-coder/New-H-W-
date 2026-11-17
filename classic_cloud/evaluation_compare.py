@@ -1,7 +1,7 @@
 """Date comparison using the same measurement links as the individual view."""
 from html import escape
 import streamlit as st
-from classic_cloud.visuals import diagram_svg, numeric
+from classic_cloud.visuals import numeric
 from process_map import KINDS, link_measurement
 
 
@@ -57,6 +57,25 @@ def placeholder(text='Data 없음'):
     return '<div class="eval-empty">'+escape(text)+'</div>'
 
 
+def hardware_table(grid, spacing, scale):
+    """Render native-size text, preserving the already oriented grid."""
+    low, high = scale
+    rows = []
+    for row in grid:
+        cells = []
+        for value in row:
+            valid = numeric(value)
+            ratio = (value-low)/(high-low) if valid and high != low else .5
+            ratio = min(1, max(0, ratio))
+            color = '#e2e8f0' if not valid else '#'+''.join(
+                f'{round(a+(b-a)*ratio):02x}' for a, b in zip((37,99,235),(239,68,68)))
+            label = f'{value:g}' if valid else '—'
+            style = '' if spacing else ' style="background:'+color+';color:'+('#fff' if valid else '#475569')+'"'
+            cells.append('<td'+style+'>'+label+'</td>')
+        rows.append('<tr>'+''.join(cells)+'</tr>')
+    return '<table aria-label="'+('Spacing' if spacing else 'Flatness')+'" class="eval-hw-table'+(' spacing' if spacing else '')+'"><tbody>'+''.join(rows)+'</tbody></table>'
+
+
 def comparison_html(unit, selected, data, hw, delta=False):
     from classic_cloud.process_views import map_html
     n = len(selected)
@@ -73,23 +92,15 @@ def comparison_html(unit, selected, data, hw, delta=False):
             conditions.append('<span'+(' class="eval-changed"' if changed else '')+'>'+escape(label+': '+str(value))+'</span>')
         cells.append('<section><h3>'+title+' · '+escape(run['date'])+'</h3><div class="eval-conditions">'+
                      ' · '.join(conditions)+'</div><small>평가 기록 '+escape(run.get('source_cell', ''))+'</small></section>')
-    hardware_cards = [[] for _ in selected]
-    hardware_details = [[] for _ in selected]
     for kind in KINDS:
         linked = [linked_measurement(unit, run, data, hw, kind) for run in selected]
         grids = [display_grid(unit, kind, m['grid']) if m else [] for m, _ in linked]
         scale = limits(grids)
-        for index, ((measured, reason), grid) in enumerate(zip(linked, grids)):
-            chart = diagram_svg(grid, kind == 'Spacing', limits=scale,
-                                show_position_labels=False, match_spacing_size=True) if measured and grid else placeholder('연결 확인 필요')
+        for (measured, reason), grid in zip(linked, grids):
+            chart = hardware_table(grid, kind == 'Spacing', scale) if measured and grid else placeholder('연결 확인 필요')
             caption = 'H/W 측정일 '+measured['date'] if measured else reason
-            card = ('<div class="eval-hw-card"><h4>'+kind+'</h4><div class="eval-caption">'+escape(caption)+'</div>'+chart+'</div>')
-            hardware_cards[index].append(card)
-            hardware_details[index].append(card)
-    for cards, details in zip(hardware_cards, hardware_details):
-        cells.append('<section class="eval-hardware"><div class="eval-hw-row">'+''.join(cards)+
-                     '</div><details class="eval-hw-detail"><summary>H/W 수치 크게 보기</summary>'+
-                     ''.join(details)+'</details></section>')
+            cells.append('<section class="eval-hardware"><div class="eval-hw-label"><h4>'+kind+
+                         '</h4><div class="eval-caption">'+escape(caption)+'</div></div><div class="eval-hw-values">'+chart+'</div></section>')
     grids = [run['grid'] for run in selected]
     shared = limits(grids)
     deltas = [difference(g, grids[0]) for g in grids]
@@ -120,20 +131,21 @@ def comparison_html(unit, selected, data, hw, delta=False):
                 rows.append('<tr><th>'+escape(key)+'</th><td>'+escape(text)+'</td></tr>')
             cells.append('<section><h3>공정 결과</h3><table class="classic-table">'+''.join(rows)+'</table></section>')
     return '''<style>
-    .eval-scroll{overflow-x:auto}.eval-grid{display:grid;gap:12px;align-items:stretch}
+    .eval-scroll{overflow-x:auto}.eval-grid{display:grid;gap:8px;align-items:stretch}
     .eval-grid section{min-width:0;border:1px solid #cbd5e1;border-radius:10px;padding:12px;background:#f8fafc}
     .eval-grid h3{margin:0 0 8px}.eval-caption{color:#60758b;min-height:32px;font-size:11px;overflow-wrap:anywhere}
-    .eval-hw-row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;align-items:start}
-    .eval-hw-card{min-width:0}.eval-hw-card h4{font-size:12px!important;line-height:1.3;min-height:32px;margin:0 0 4px;padding:0}
-    .eval-hw-card svg{width:100%;height:auto;display:block}
-    .eval-hw-card .eval-empty{font-size:11px;text-align:center}
-    .eval-hw-detail{margin-top:8px}.eval-hw-detail summary{cursor:pointer;color:#365f88;font-size:12px}
-    .eval-hw-detail .eval-hw-card{margin:12px auto 0;max-width:560px}
-    .eval-hw-detail h4{font-size:16px!important;min-height:0}.eval-hw-detail .eval-caption{font-size:12px;min-height:24px}
+    .eval-grid .eval-hardware{display:grid;grid-template-columns:92px minmax(0,1fr);gap:8px;align-items:center;padding:8px}
+    .eval-hw-label h4{font-size:14px!important;line-height:1.3;margin:0 0 6px;padding:0}
+    .eval-hw-values{min-width:0}
+    .eval-hw-table{width:100%;height:130px;table-layout:fixed;border-collapse:collapse;margin:0;font-variant-numeric:tabular-nums}
+    .eval-hw-table td{padding:2px 0;border:1px solid #cbd5e1;text-align:center;font-size:14px;font-weight:700;line-height:1.15}
+    .eval-hw-table.spacing{height:100px}.eval-hw-table.spacing td{font-size:17px;background:#fff;color:#17324d}
+    .eval-hw-table.spacing tr:nth-child(2) td:nth-child(2){background:#e0f2fe;border:2px solid #0891b2}
+    .eval-hw-values .eval-empty{aspect-ratio:auto;height:130px;font-size:13px;text-align:center}
     .eval-empty{aspect-ratio:700/510;border:1px solid #cbd5e1;display:flex;align-items:center;justify-content:center}
     .eval-map{display:grid;grid-template-columns:20px minmax(0,1fr) 20px;align-items:center;gap:5px}
-    .eval-map table{border-collapse:collapse;margin:0;width:100%;table-layout:fixed;height:300px}
-    .eval-map td{padding:10px 2px!important;font-size:14px;text-align:center}
+    .eval-map table{border-collapse:collapse;margin:0;width:100%;table-layout:fixed;height:240px}
+    .eval-map td{padding:5px 2px!important;font-size:14px;text-align:center}
     .eval-side{writing-mode:vertical-rl;color:#075985;font-size:12px}.eval-side:first-child{transform:rotate(180deg)}
     .eval-unif{text-align:right;font-weight:600;margin-top:8px}.eval-changed{background:#fef3c7;padding:3px}
     .eval-conditions{min-height:44px}.eval-grid small{color:#60758b}
