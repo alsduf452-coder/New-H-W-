@@ -3,7 +3,7 @@ import pandas as pd
 import streamlit as st
 from classic_cloud.evaluation_compare import comparison_navigation, comparison_panel
 from process_map import link_measurement,KINDS
-from classic_cloud.visuals import diagram_svg,detail
+from classic_cloud.visuals import diagram_svg,detail,excel_color
 
 
 def map_html(grid, limits=None):
@@ -14,7 +14,7 @@ def map_html(grid, limits=None):
         cells=[]
         for v in row:
             ratio=(v-low)/(high-low) if v is not None and high!=low else .5
-            color='#e2e8f0' if v is None else f'hsl({120*(1-ratio):.1f},65%,78%)'
+            color=excel_color(v,low,high)
             cells.append(f'<td style="background:{color};text-align:center;padding:20px;border:1px solid #cbd5e1">{v:g}</td>' if v is not None else '<td style="text-align:center;background:#e2e8f0">Data 없음</td>')
         rows.append('<tr>'+''.join(cells)+'</tr>')
     return '<table style="width:100%;table-layout:fixed;color:#17324d">'+''.join(rows)+'</table>'
