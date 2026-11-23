@@ -130,10 +130,10 @@ def diagram_svg(grid, spacing=False, limits=None, orientation='columns', transpo
         for j,v in enumerate(row):
             ratio=0.5 if high==low else (v-low)/(high-low) if numeric(v) else 0
             ratio=min(1,max(0,ratio))
-            color='#e2e8f0' if not numeric(v) else '#'+''.join(f'{round(a+(b-a)*ratio):02x}' for a,b in zip((37,99,235),(239,68,68)))
+            color=excel_color(v,low,high)
             x,y=(40 if match_spacing_size else 60)+j*width,(45 if match_spacing_size else 65)+i*height
             label=f'P{points[i][j]}' if spacing else (f'R{j+1}C{i+1}' if transpose else f'R{i+1}C{j+1}')
-            ink='#475569' if not numeric(v) else '#ffffff'
+            ink='#475569' if not numeric(v) else '#172b4d'
             position_text=f'<text x="{x+4}" y="{y+13}" font-size="10" fill="{ink}">{label}</text>' if show_position_labels else ''
             out.append(f'<rect x="{x}" y="{y}" width="{width}" height="{height}" fill="{color}" stroke="#cbd5e1"/>{position_text}<text x="{x+width/2}" y="{y+height/2+7}" text-anchor="middle" font-size="19" font-weight="700" fill="{ink}">{escape(number(v))}</text>')
     if transpose:
@@ -188,3 +188,17 @@ def spacing_diagram_svg(grid,table_mode=False,show_position_labels=True):
     return ''.join(svg)+'</svg>'
 
 
+
+
+def excel_color(value, low, high):
+    if not numeric(value):return '#e2e8f0'
+    ratio=.5 if high==low else min(1,max(0,(value-low)/(high-low)))
+    left,right,t=((99,190,123),(255,235,132),ratio*2) if ratio<=.5 else ((255,235,132),(248,105,107),(ratio-.5)*2)
+    return '#'+''.join(f'{round(a+(b-a)*t):02x}' for a,b in zip(left,right))
+
+
+def color_legend(low,high):
+    return ('<div style="max-width:420px;margin:8px 0 16px;color:#17324d;font-size:12px">'
+            '<div style="height:12px;background:linear-gradient(to right,#63be7b,#ffeb84,#f8696b);border-radius:3px"></div>'
+            '<div style="display:flex;justify-content:space-between"><span>최소 '+number(low)+
+            '</span><span>중간 '+number((low+high)/2)+'</span><span>최대 '+number(high)+'</span></div></div>')
