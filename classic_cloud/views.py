@@ -8,7 +8,7 @@ import plotly.express as px
 import plotly.graph_objects as go
 import streamlit as st
 from classic_cloud import model
-from classic_cloud.visuals import detail, installed_html, measurement_table, diagram_svg, number, numeric, spacing_table_html
+from classic_cloud.visuals import detail, installed_html, measurement_table, diagram_svg, number, numeric, spacing_table_html, color_legend
 
 
 def downloads(frame,name,extra=None):
@@ -171,11 +171,13 @@ def measurement(hw,chamber,kind):
         st.subheader('Chamber '+chamber+' · '+kind+' · 전체 '+str(len(rows))+'건')
         st.caption('최신 측정부터 모든 기록을 표시합니다. 같은 날짜의 기록도 각각 유지합니다.'+
                    (' Spacing 위치와 885 mils 기준은 동일합니다.' if spacing else ' 모든 Flatness 위치도는 동일한 색상 범위를 사용합니다.'))
+        if not spacing:st.markdown(color_legend(*limits),unsafe_allow_html=True)
         for offset in range(0,len(rows),3):
             for panel,item in zip(st.columns(3),rows[offset:offset+3]):
                 with panel:
                     st.subheader(item['date'])
-                    st.caption('원본 기록 '+str(item['id'])+' · '+(item.get('reason') or '사유 미기재'))
+                    description='원본 기록 '+str(item['id'])+' · '+(item.get('reason') or '사유 미기재')
+                    st.markdown('<div style="height:72px;overflow-y:auto;font-size:13px;line-height:20px;color:#60758b;margin-bottom:8px">'+escape(description)+'</div>',unsafe_allow_html=True)
                     st.markdown(diagram_svg(item['grid'],spacing,limits,show_position_labels=False),unsafe_allow_html=True)
                     st.caption('Diffuser S/N: '+(item.get('diffuser_sn') or '—')+' · Susceptor S/N: '+(item.get('susceptor_sn') or '—'))
                     st.caption('최소 '+number(item['min'])+' · 최대 '+number(item['max'])+' · Max−Min '+number(item['range'])+
