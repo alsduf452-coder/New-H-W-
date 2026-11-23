@@ -14,6 +14,12 @@ def text(value):
     return '' if value is None else str(value).strip()
 
 
+def display_target_date(value):
+    value=text(value)
+    match=re.fullmatch(r'(\d{4}-\d{2}-\d{2})[ T]\d{2}:\d{2}:\d{2}(?:\.\d+)?',value)
+    return match.group(1) if match else value
+
+
 def pending_frame(snapshot):
     previews = snapshot.get('previews',{})
     details = previews.get('__pending_data__',{}).get('details',[])
@@ -35,7 +41,9 @@ def pending_frame(snapshot):
                 item.update(설비=val(3),발생일=val(2),Unit=val(4),내용=val(5)+'\n'+val(6),원인=val(7),조치내용=val(8),**{'진행 사항':val(9)})
             item['설비']=item['설비'] or '미기재'
             if item['내용']:rows.append(item)
-    return pd.DataFrame(rows,columns=COLS)
+    frame=pd.DataFrame(rows,columns=COLS)
+    frame['목표일']=frame['목표일'].map(display_target_date)
+    return frame
 
 
 def filter_pending(frame, scope='주요 5개 분야', equipment=(), categories=(), states=(), query=''):
