@@ -29,7 +29,7 @@ def pending(snapshot, filters, generation='', show_header=True):
     if customer:
         values.append(('확인 필요',str(unresolved_state),'확인 필요'))
     if all_sources:
-        values=[(name,str(int((base['범위']==scope).sum())),None) for name,scope in [('주요 펜딩','주요 5개 분야'),('고객사 요청','고객사 요청'),('보조 시트','보조 시트')]]
+        values=[(name,str(int((base['범위']==scope).sum())),None) for name,scope in [('주요 Pending','주요 5개 분야'),('고객사 요청','고객사 요청')]]
         st.info('출처별 기록 건수입니다. 같은 요청이 여러 시트에 있을 수 있어 통합 고유 건수·완료율로 합산하지 않습니다.')
     for col,(label,value,state) in zip(st.columns(len(values)),values):
         with col:
@@ -47,7 +47,7 @@ def pending(snapshot, filters, generation='', show_header=True):
             panel.dataframe(grouped,hide_index=True,use_container_width=True)
     counts,unresolved=model.deadlines(base[base['범위']=='주요 5개 분야'] if all_sources else base,datetime.now(ZoneInfo('Asia/Seoul')).date())
     with st.columns(2)[0]:
-        st.subheader(('주요 펜딩 · ' if all_sources else '')+'미완료 목표일 현황')
+        st.subheader(('주요 Pending · ' if all_sources else '')+'미완료 목표일 현황')
         fig=go.Figure(go.Bar(x=list(counts),y=list(counts.values()),marker_color=['#dc2626','#f59e0b','#2563eb'],text=list(counts.values()),textposition='auto'))
         fig.update_layout(height=280,margin=dict(l=20,r=15,t=20,b=25),yaxis=dict(dtick=1,title='건수'))
         st.plotly_chart(fig,use_container_width=True,key='classic_deadlines')
@@ -87,7 +87,7 @@ def pending(snapshot, filters, generation='', show_header=True):
             st.dataframe(warnings,hide_index=True,use_container_width=True)
     if customer and not any('고객사요청'==''.join(name.split()) for name in snapshot.get('previews',{})):
         st.info('수신 데이터에 고객사요청 시트가 없습니다. 통합 원본 파일을 동기화해주세요.')
-    if not cpo and filters['scope'] not in ('주요 5개 분야','주요 펜딩'):st.caption('보조 시트는 주요 분야와 중복될 수 있습니다. 일부 원본 시트가 잘린 경우 수신된 미리보기 범위만 조회됩니다.')
+    if not cpo and filters['scope'] not in ('주요 5개 분야','주요 Pending'):st.caption('고객사 요청은 주요 Pending과 중복될 수 있어 출처별로 구분합니다.')
 
 
 def revisions(snapshot, generation=''):
