@@ -103,11 +103,15 @@ if page=='PENDING 현황':
     all_rows=model.pending_frame(initial['pending'])
     with st.sidebar:
         st.subheader('PENDING 현황 필터')
-        scope=cards('조회 범위',['주요 5개 분야','보조 시트','전체 시트'],'classic_scope') if generation=='6G' else '주요 항목'
-        frame=all_rows if scope=='전체 시트' else all_rows[all_rows['범위']==scope]
+        scope=cards('조회 범위',['주요 펜딩','고객사 요청','보조 시트','전체'],'classic_scope') if generation=='6G' else '주요 항목'
+        if st.session_state.get('classic_pending_scope_previous')!=scope:
+            for key in ['classic_equipment','classic_fields','classic_states','classic_drill']:
+                st.session_state.pop(key,None)
+            st.session_state['classic_pending_scope_previous']=scope
+        frame=model.filter_pending(all_rows,scope=scope)
         equipment=st.multiselect('설비',sorted(frame['설비'].unique()),key='classic_equipment')
         categories=st.multiselect('분야',sorted(frame['분야'].unique()),key='classic_fields')
-        states=st.multiselect('상태',['완료','미완료'],key='classic_states')
+        states=st.multiselect('상태',['완료','미완료','확인 필요'],key='classic_states')
         search=st.text_input('검색',placeholder='내용·Unit·담당자·조치내용',key='classic_search')
     filters={'scope':scope,'equipment':equipment,'categories':categories,'states':states,'query':search}
     signature=str(filters)

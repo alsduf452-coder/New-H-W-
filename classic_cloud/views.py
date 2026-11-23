@@ -22,24 +22,32 @@ def pending(snapshot, filters, generation=''):
     frame=model.pending_frame(snapshot)
     base=model.filter_pending(frame,**filters)
     done=int((base['상태']=='완료').sum());total=len(base)
-    values=[('전체 건수',str(total),None),('완료',str(done),'완료'),('미완료',str(total-done),'미완료'),('완료율',f'{done/total*100:.1f}%' if total else '0.0%',None)]
-    for col,(label,value,state) in zip(st.columns(4),values):
+    unresolved_state=int((base['상태']=='확인 필요').sum())
+    all_sources=filters.get('scope') in ('전체','전체 시트')
+    customer=filters.get('scope')=='고객사 요청'
+    values=[('전체 건수',str(total),None),('완료',str(done),'완료'),('미완료',str(int((base['상태']=='미완료').sum())),'미완료'),('완료율',f'{done/total*100:.1f}%' if total else '0.0%',None)]
+    if customer:
+        values.append(('확인 필요',str(unresolved_state),'확인 필요'))
+    if all_sources:
+        values=[(name,str(int((base['범위']==scope).sum())),None) for name,scope in [('주요 펜딩','주요 5개 분야'),('고객사 요청','고객사 요청'),('보조 시트','보조 시트')]]
+        st.info('출처별 기록 건수입니다. 같은 요청이 여러 시트에 있을 수 있어 통합 고유 건수·완료율로 합산하지 않습니다.')
+    for col,(label,value,state) in zip(st.columns(len(values)),values):
         with col:
             st.caption(label)
             if st.button(value,key='classic_kpi_'+label,use_container_width=True):st.session_state.classic_drill=state
     st.caption('현재 필터 기준 · 완료/미완료 카드를 누르면 해당 목록을 조회합니다.')
     left,right=st.columns(2)
-    for panel,group in [(left,'분야'),(right,'설비')]:
+    for panel,group in ([(left,'범위')] if all_sources else [(left,'분야'),(right,'설비')]):
         grouped=model.summary(base,group)
         panel.subheader(group+'별 현황')
         if not grouped.empty:
-            fig=px.bar(grouped,x=group,y=['완료','미완료'],color_discrete_map={'완료':'#2563eb','미완료':'#ef4444'},barmode='stack')
+            fig=px.bar(grouped,x=group,y=['완료','미완료','확인 필요'],color_discrete_map={'완료':'#2563eb','미완료':'#ef4444','확인 필요':'#94a3b8'},barmode='stack')
             fig.update_layout(height=280,margin=dict(l=15,r=15,t=20,b=20),legend_title_text='상태',yaxis_title='건수')
             panel.plotly_chart(fig,use_container_width=True,key='classic_chart_'+group)
             panel.dataframe(grouped,hide_index=True,use_container_width=True)
-    counts,unresolved=model.deadlines(base,datetime.now(ZoneInfo('Asia/Seoul')).date())
+    counts,unresolved=model.deadlines(base[base['범위']=='주요 5개 분야'] if all_sources else base,datetime.now(ZoneInfo('Asia/Seoul')).date())
     with st.columns(2)[0]:
-        st.subheader('미완료 목표일 현황')
+        st.subheader(('주요 펜딩 · ' if all_sources else '')+'미완료 목표일 현황')
         fig=go.Figure(go.Bar(x=list(counts),y=list(counts.values()),marker_color=['#dc2626','#f59e0b','#2563eb'],text=list(counts.values()),textposition='auto'))
         fig.update_layout(height=280,margin=dict(l=20,r=15,t=20,b=25),yaxis=dict(dtick=1,title='건수'))
         st.plotly_chart(fig,use_container_width=True,key='classic_deadlines')
@@ -51,6 +59,11 @@ def pending(snapshot, filters, generation=''):
         st.session_state.classic_drill=None;st.rerun(scope='app')
     cpo=snapshot.get('previews',{}).get('__pending_data__',{}).get('schema','').startswith('pending-cpo-')
     columns=['설비','분야','상태','Unit','내용','담당자','목표일','시트']
+    if customer:
+        columns=['설비','분야','상태','Unit','내용','목표일','45호기 적용 여부','요청 구분']
+        st.caption('확인 필요는 완료 여부가 명확하지 않은 기록입니다. 검토 결과·원본 상태와 설비별 적용 여부는 상세 보기에서 확인하세요.')
+    elif all_sources:
+        columns=['범위']+columns
     if cpo:
         columns=['설비','분야','상태','개선 Item','원본 상태','진척도','목표일']
         st.caption('완료 집계: 완료·고객 전달 완료 / 그 외 상태는 미완료 · 원본 상태와 진척도는 그대로 표시합니다.')
@@ -64,13 +77,17 @@ def pending(snapshot, filters, generation=''):
         row=shown.iloc[positions[0]]
         st.subheader('PENDING 상세')
         fields=['설비','분야','상태','개선 Item','상세 내용','원본 상태','진척도','진행 사항','목표일','완료일','비고','관련 메모'] if cpo else ['설비','분야','상태','Unit','내용','발생일','담당자','원인','진행 사항','목표일','조치내용','완료일','조치자','45호기 적용 여부']
+        if row['범위']=='고객사 요청':
+            fields=['설비','분야','상태','요청 구분','Unit','내용','발생일','목표일','완료일','검토 결과','완료 여부 원문','진행 사항','기존 펜딩 중복 여부','45호기 적용 여부']
         detail([(field,row[field]) for field in fields])
-    downloads(shown.drop(columns=['ID']),'Pending List',{'분야별 집계':model.summary(shown,'분야'),'설비별 집계':model.summary(shown,'설비')})
+    downloads(shown.drop(columns=['ID']),'Pending List',({'출처별 기록 집계':model.summary(shown,'범위')} if all_sources else {'분야별 집계':model.summary(shown,'분야'),'설비별 집계':model.summary(shown,'설비')}))
     warnings=snapshot.get('previews',{}).get('__pending_data__',{}).get('warnings',[])
     if warnings:
         with st.expander(f'목표일 확인 필요 · {len(warnings)}건'):
             st.dataframe(warnings,hide_index=True,use_container_width=True)
-    if not cpo and filters['scope']!='주요 5개 분야':st.caption('보조 시트는 주요 분야와 중복될 수 있습니다. 일부 원본 시트가 잘린 경우 수신된 미리보기 범위만 조회됩니다.')
+    if customer and not any('고객사요청'==''.join(name.split()) for name in snapshot.get('previews',{})):
+        st.info('수신 데이터에 고객사요청 시트가 없습니다. 통합 원본 파일을 동기화해주세요.')
+    if not cpo and filters['scope'] not in ('주요 5개 분야','주요 펜딩'):st.caption('보조 시트는 주요 분야와 중복될 수 있습니다. 일부 원본 시트가 잘린 경우 수신된 미리보기 범위만 조회됩니다.')
 
 
 def revisions(snapshot, generation=''):
