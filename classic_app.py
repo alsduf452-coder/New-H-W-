@@ -83,6 +83,17 @@ try:
 except Exception:
     st.error('동기화 데이터를 읽지 못했습니다. DB 연결과 cloud_local_excel 테이블의 조회 권한을 확인해주세요.');st.stop()
 
+@st.fragment(run_every=15)
+def sync_status_panel():
+    guard_fragment()
+    if mode=='postgres':
+        try:
+            request=SyncControl(database.engine).status()
+            if request:
+                render_sync_status(request,compact=True)
+        except Exception:
+            if st.session_state.get('manual_requested'):st.warning('수동 동기화 상태를 확인하지 못했습니다.')
+
 with st.sidebar:
     st.markdown('**🔷 양산 설비 통합 관리**')
     st.caption('PECVD 설비 · Excel 연동 조회')
@@ -97,24 +108,13 @@ with st.sidebar:
             except Exception:
                 st.error('수동 동기화 요청을 등록하지 못했습니다. 새 수신 서버 배포와 DB 연결을 확인해주세요.')
         else:st.info('샘플 화면에서는 PC 동기화를 요청하지 않습니다.')
+    sync_status_panel()
     st.caption('버튼을 누르면 PC에 Excel 동기화를 요청합니다. PC가 켜져 있고 예약 수신 기능이 등록되어 있어야 합니다.')
     st.caption('화면은 15초마다 수신 데이터를 확인합니다. 수정은 PC Excel에서 저장해주세요.')
 
 if page=='PENDING 현황':
     st.header(generation+' · PENDING 현황')
 
-@st.fragment(run_every=15)
-def sync_status_panel():
-    guard_fragment()
-    if mode=='postgres':
-        try:
-            request=SyncControl(database.engine).status()
-            if request:
-                render_sync_status(request)
-        except Exception:
-            if st.session_state.get('manual_requested'):st.warning('수동 동기화 상태를 확인하지 못했습니다.')
-
-sync_status_panel()
 
 filters={};chamber='전체';section='설비 현황';flatness='Diffuser';query=''
 if page=='PENDING 현황':
