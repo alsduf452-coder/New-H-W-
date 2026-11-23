@@ -24,6 +24,11 @@ def process_panel(process_snapshot,hw_snapshot):
     st.header('6G · 15호기 H/W 형상 · 공정 Map 비교')
     data=process_snapshot.get('previews',{}).get('__process_data__')
     if not data:st.info('15호기 공정 Map 파일 수신을 기다리고 있습니다.');return
+    layout=st.segmented_control('화면 배치',['기본 보기','한 화면 보기'],default='한 화면 보기',key='process_layout_15')
+    if layout=='한 화면 보기':
+        from classic_cloud.compact_process import compact_panel
+        compact_panel('15',data,hw_snapshot)
+        return
     records=data['records']
     chamber=st.selectbox('공정 PC',list('ABCDE'),key='process15_pc')
     runs=sorted([r for r in records if r['chamber']==chamber],key=lambda r:(r['date'],r['source_cell']),reverse=True)
