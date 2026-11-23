@@ -94,6 +94,27 @@ def sync_status_panel():
         except Exception:
             if st.session_state.get('manual_requested'):st.warning('수동 동기화 상태를 확인하지 못했습니다.')
 
+    try:
+        current=read_sources()
+    except Exception:
+        st.caption('최근 수신 정보 확인 불가')
+        return
+    st.caption('최근 수신 · 한국 시간')
+    received=[(generation+' PENDING',current['pending'])]
+    received.append((hw_unit+' H/W',current['hw']))
+    if generation=='6G':received.append((hw_unit+' 공정 Map',current.get('process',{})))
+    for label,snapshot in received:
+        state=snapshot.get('state',{})
+        stamp=state.get('received_at')
+        if stamp:
+            try:stamp=datetime.fromisoformat(stamp).astimezone(ZoneInfo('Asia/Seoul')).strftime('%m/%d %H:%M')
+            except ValueError:pass
+            st.caption(f'{label} · {stamp} · v{snapshot["revision"]}')
+        else:st.caption(label+' · 수신 대기')
+        if state.get('warning'):st.warning(label+': '+state['warning'])
+        if state.get('pending_status')=='conflict':
+            st.warning('기존 앱 DB 반영에 충돌이 있습니다. 새 앱은 가장 최근 수신한 Excel 스냅샷을 표시합니다. 기존 앱의 충돌 내역을 별도로 확인해주세요.')
+
 with st.sidebar:
     st.markdown('**🔷 양산 설비 통합 관리**')
     st.caption('PECVD 설비 · Excel 연동 조회')
@@ -156,20 +177,6 @@ def content():
         current=read_sources()
     except Exception:
         st.error('데이터 갱신에 실패했습니다. 잠시 후 다시 확인해주세요.');return
-    received=[(generation+' PENDING',current['pending'])]
-    received.append(((generation if generation=='6G' else '8.6G')+' · '+hw_unit+' H/W',current['hw']))
-    if generation=='6G':received.append((hw_unit+' 공정 Map',current.get('process',{})))
-    for label,snapshot in received:
-        state=snapshot.get('state',{})
-        stamp=state.get('received_at')
-        if stamp:
-            try:stamp=datetime.fromisoformat(stamp).astimezone(ZoneInfo('Asia/Seoul')).strftime('%Y-%m-%d %H:%M:%S KST')
-            except ValueError:pass
-            st.caption(f'{label} 마지막 수신: {stamp} · 수신 버전 {snapshot["revision"]}')
-        else:st.caption(label+' · 수신 대기')
-        if state.get('warning'):st.warning(label+': '+state['warning'])
-        if state.get('pending_status')=='conflict':
-            st.warning('기존 앱 DB 반영에 충돌이 있습니다. 새 앱은 가장 최근 수신한 Excel 스냅샷을 표시합니다. 기존 앱의 충돌 내역을 별도로 확인해주세요.')
     if page=='H/W · 공정 Map':
         if hw_unit=='45호기':process45_views.process45_panel(current.get('process',{}),current['hw'])
         else:process_views.process_panel(current.get('process',{}),current['hw'])
