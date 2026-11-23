@@ -45,13 +45,21 @@ def source_results(request):
     return results
 
 
-def render_sync_status(request):
+def render_sync_status(request, compact=False):
     results = source_results(request)
     good = sum(tone == 'ok' for _, _, tone in results)
     status = request.get('status')
     title = LABELS.get(status, '동기화 상태 확인 필요')
     if status in ('done', 'failed'):
         title += f' · {good}/6 정상'
+    if compact:
+        icon='✅' if status=='done' and good==len(results) else '⚠️' if status in ('failed','blocked','expired') or status=='done' else '⏳'
+        st.markdown('**'+icon+' '+title+'**')
+        with st.expander('동기화 상세'):
+            for label,state,tone in results:
+                st.caption(label+' · '+state)
+            st.text(request.get('summary') or LABELS.get(status,'상세 결과 없음'))
+        return
     tiles = ''.join(
         '<div class="sync-result"><span>'+escape(label)+'</span>'
         '<span class="sync-result-'+tone+'">'+escape(state)+'</span></div>'
