@@ -98,11 +98,26 @@ with st.sidebar:
     st.caption('버튼을 누르면 PC에 Excel 동기화를 요청합니다. PC가 켜져 있고 예약 수신 기능이 등록되어 있어야 합니다.')
     st.caption('화면은 15초마다 수신 데이터를 확인합니다. 수정은 PC Excel에서 저장해주세요.')
 
+if page=='PENDING 현황':
+    st.header(generation+' · PENDING 현황')
+
+@st.fragment(run_every=15)
+def sync_status_panel():
+    guard_fragment()
+    if mode=='postgres':
+        try:
+            request=SyncControl(database.engine).status()
+            if request:
+                render_sync_status(request)
+        except Exception:
+            if st.session_state.get('manual_requested'):st.warning('수동 동기화 상태를 확인하지 못했습니다.')
+
+sync_status_panel()
+
 filters={};chamber='전체';section='설비 현황';flatness='Diffuser';query=''
 if page=='PENDING 현황':
     all_rows=model.pending_frame(initial['pending'])
-    st.header(generation+' · PENDING 현황')
-    scope=cards('조회 대상',['주요 펜딩','고객사 요청','보조 시트','전체'],'classic_scope',True) if generation=='6G' else '주요 항목'
+    scope=cards('조회 대상',['주요 Pending','고객사 요청','전체'],'classic_scope',True) if generation=='6G' else '주요 항목'
     if st.session_state.get('classic_pending_scope_previous')!=scope:
         for key in ['classic_equipment','classic_fields','classic_states','classic_drill']:
             st.session_state.pop(key,None)
@@ -137,13 +152,6 @@ def content():
         current=read_sources()
     except Exception:
         st.error('데이터 갱신에 실패했습니다. 잠시 후 다시 확인해주세요.');return
-    if mode=='postgres':
-        try:
-            request=SyncControl(database.engine).status()
-            if request:
-                render_sync_status(request)
-        except Exception:
-            if st.session_state.get('manual_requested'):st.warning('수동 동기화 상태를 확인하지 못했습니다.')
     received=[(generation+' PENDING',current['pending'])]
     received.append(((generation if generation=='6G' else '8.6G')+' · '+hw_unit+' H/W',current['hw']))
     if generation=='6G':received.append((hw_unit+' 공정 Map',current.get('process',{})))
