@@ -20,12 +20,13 @@ except FileNotFoundError:
 mode=settings.get('storage',{}).get('mode','demo')
 with st.sidebar:
     generation=cards('설비 세대',['6G','8G'],'classic_generation',True)
-    if generation=='6G':
-        hw_unit=st.selectbox('H/W 설비',['45호기','15호기'],key='classic_hw_unit')
-    else:
-        hw_unit='A6 BP-04'
-        st.caption('8.6G · A6 BP-04')
     st.caption('PENDING은 선택한 세대의 파일을 조회합니다. H/W 설비 선택은 H/W 조회에 적용됩니다.')
+if generation=='6G':
+    with st.columns([1,2])[0]:
+        hw_unit=st.selectbox('H/W 설비',['45호기','15호기'],key='classic_hw_unit')
+else:
+    hw_unit='A6 BP-04'
+    st.caption('8.6G · A6 BP-04')
 
 if st.session_state.get('classic_previous_generation')!=generation:
     for key in ['classic_equipment','classic_fields','classic_states','classic_search','classic_scope','classic_drill','classic_filter_signature','classic_rev_query']:
@@ -138,9 +139,11 @@ if page=='PENDING 현황':
         st.session_state.classic_drill=None
         st.session_state.classic_filter_signature=signature
 elif page=='설비 H/W 이력관리' and generation=='6G':
-    with st.sidebar:
-        st.subheader('H/W 조회 필터')
+    st.subheader('H/W 조회')
+    hw_filters=st.columns([1,2])
+    with hw_filters[0]:
         chamber=st.selectbox('H/W 챔버',['전체','A','B','C','D','E'],key='classic_chamber')
+    with hw_filters[1]:
         query=st.text_input('작업 이력 검색',key='classic_work_search')
     section=cards('H/W 메뉴',['설비 현황','작업 이력','부품 추적','Spacing','Flatness','데이터 관리'],'classic_hw_section',True)
     if section=='Flatness':flatness=cards('Flatness 항목',['Diffuser','Susceptor'],'classic_flat_part',True)
