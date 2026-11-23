@@ -50,9 +50,9 @@ def pending(snapshot, filters, generation=''):
     if selected and st.button('카드 선택 해제',key='classic_clear_drill'):
         st.session_state.classic_drill=None;st.rerun(scope='app')
     cpo=snapshot.get('previews',{}).get('__pending_data__',{}).get('schema','').startswith('pending-cpo-')
-    columns=['ID','설비','분야','상태','Unit','내용','담당자','목표일','시트']
+    columns=['설비','분야','상태','Unit','내용','담당자','목표일','시트']
     if cpo:
-        columns=['ID','설비','분야','상태','개선 Item','원본 상태','진척도','목표일']
+        columns=['설비','분야','상태','개선 Item','원본 상태','진척도','목표일']
         st.caption('완료 집계: 완료·고객 전달 완료 / 그 외 상태는 미완료 · 원본 상태와 진척도는 그대로 표시합니다.')
     st.caption('목록에서 원하는 행을 클릭하면 아래에 상세 내용이 표시됩니다.')
     # Reset positional selection when filtering or incoming rows change order.
@@ -65,7 +65,7 @@ def pending(snapshot, filters, generation=''):
         st.subheader('PENDING 상세')
         fields=['설비','분야','상태','개선 Item','상세 내용','원본 상태','진척도','진행 사항','목표일','완료일','비고','관련 메모'] if cpo else ['설비','분야','상태','Unit','내용','발생일','담당자','원인','진행 사항','목표일','조치내용','완료일','조치자','45호기 적용 여부']
         detail([(field,row[field]) for field in fields])
-    downloads(shown,'Pending List',{'분야별 집계':model.summary(shown,'분야'),'설비별 집계':model.summary(shown,'설비')})
+    downloads(shown.drop(columns=['ID']),'Pending List',{'분야별 집계':model.summary(shown,'분야'),'설비별 집계':model.summary(shown,'설비')})
     warnings=snapshot.get('previews',{}).get('__pending_data__',{}).get('warnings',[])
     if warnings:
         with st.expander(f'목표일 확인 필요 · {len(warnings)}건'):
