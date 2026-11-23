@@ -1,7 +1,7 @@
 """Date comparison using the same measurement links as the individual view."""
 from html import escape
 import streamlit as st
-from classic_cloud.visuals import numeric
+from classic_cloud.visuals import numeric, excel_color
 from process_map import KINDS, link_measurement
 
 
@@ -67,10 +67,9 @@ def hardware_table(grid, spacing, scale):
             valid = numeric(value)
             ratio = (value-low)/(high-low) if valid and high != low else .5
             ratio = min(1, max(0, ratio))
-            color = '#e2e8f0' if not valid else '#'+''.join(
-                f'{round(a+(b-a)*ratio):02x}' for a, b in zip((37,99,235),(239,68,68)))
+            color = excel_color(value,low,high)
             label = f'{value:g}' if valid else '—'
-            style = '' if spacing else ' style="background:'+color+';color:'+('#fff' if valid else '#475569')+'"'
+            style = '' if spacing else ' style="background:'+color+';color:'+('#172b4d' if valid else '#475569')+'"'
             cells.append('<td'+style+'>'+label+'</td>')
         rows.append('<tr>'+''.join(cells)+'</tr>')
     return '<table aria-label="'+('Spacing' if spacing else 'Flatness')+'" class="eval-hw-table'+(' spacing' if spacing else '')+'"><tbody>'+''.join(rows)+'</tbody></table>'
@@ -159,7 +158,7 @@ def delta_map(grid, magnitude):
     for row in grid:
         cells = []
         for v in row:
-            color = '#e2e8f0' if not numeric(v) else f'hsl({0 if v > 0 else 215},65%,{98-35*abs(v)/magnitude:.1f}%)'
+            color = excel_color(v,-magnitude,magnitude)
             label = f'{v:+g}' if numeric(v) else '—'
             cells.append('<td style="background:'+color+'">'+label+'</td>')
         rows.append('<tr>'+''.join(cells)+'</tr>')
@@ -189,6 +188,6 @@ def comparison_panel(unit, chamber, runs, run, data, hw, mode):
         return True
     delta = st.segmented_control('공정 Map 표시', ['원본 값', '기준 대비 차이'], default='원본 값', key=prefix+'_display') == '기준 대비 차이'
     st.caption('같은 항목은 색상 범위를 통일합니다. 차이는 비교값 − 기준값이며, 측정값이 없는 위치는 계산하지 않습니다.' if not delta
-               else '기준 Map은 원본 값입니다. 비교 Map은 증가 빨강·감소 파랑으로 표시하며, 색은 양호/불량 판정이 아닙니다.')
+               else '기준 Map은 원본 값입니다. 비교 Map은 증가 빨강·0 노랑·감소 초록으로 표시하며, 색은 양호/불량 판정이 아닙니다.')
     st.markdown(comparison_html(unit, [run]+[candidates[k] for k in ids], data, hw, delta), unsafe_allow_html=True)
     return True
