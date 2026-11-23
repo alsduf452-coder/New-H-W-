@@ -15,8 +15,8 @@ def downloads(frame,name,extra=None):
     st.download_button('조회 결과 Excel 다운로드',model.workbook_export({name:frame,**(extra or {})}),name+'.xlsx',mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',key='classic_download_'+name)
 
 
-def pending(snapshot, filters, generation=''):
-    st.header((generation+' · ' if generation else '')+'PENDING 현황')
+def pending(snapshot, filters, generation='', show_header=True):
+    if show_header:st.header((generation+' · ' if generation else '')+'PENDING 현황')
     if not snapshot.get('revision'):
         st.info('PENDING 파일 수신을 기다리고 있습니다. 기존 동기화 프로그램에서 PENDING 전송 결과를 확인해주세요.');return
     frame=model.pending_frame(snapshot)
