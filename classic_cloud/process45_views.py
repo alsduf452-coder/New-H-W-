@@ -37,6 +37,11 @@ def process45_panel(snapshot, hw_snapshot=None):
     if not data or data.get('equipment') != '45호기':
         st.info('45호기 공정 파일 수신을 기다리고 있습니다.')
         return
+    layout=st.segmented_control('화면 배치',['기본 보기','한 화면 보기'],default='한 화면 보기',key='process_layout_45')
+    if layout=='한 화면 보기':
+        from classic_cloud.compact_process import compact_panel
+        compact_panel('45',data,hw_snapshot or {})
+        return
     chamber = st.selectbox('공정 PC', list('ABCDE'), key='process45_pc')
     runs = sorted([r for r in data['records'] if r['chamber'] == chamber],
                   key=lambda r: (r['date'], r['mt_date'], r['recipe'], r['source_cell']), reverse=True)
