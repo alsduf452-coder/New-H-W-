@@ -164,25 +164,33 @@ def measurement(hw,chamber,kind):
         measurement_download(rows,kind)
         return
     rows=sorted(rows,key=lambda r:(r['date'],r['source_row']),reverse=True)
-    by_id={r['id']:r for r in rows}
-    selected=st.selectbox('측정 기록',[r['id'] for r in rows],format_func=lambda identifier:f"{by_id[identifier]['date']} · {by_id[identifier]['reason']} · {identifier}",key='classic_measure_'+kind)
-    record=by_id[selected]
-    st.caption(f"Diffuser S/N: {record.get('diffuser_sn') or '—'} · Susceptor S/N: {record.get('susceptor_sn') or '—'}")
-    mode=st.segmented_control('측정 보기',['단일 상세','측정 전후 비교'],default='단일 상세',key='classic_compare_mode_'+kind)
-    if mode=='측정 전후 비교':
-        others=[r for r in rows if r['id']!=selected]
-        if not others:st.info('비교할 다른 측정 기록이 없습니다.');return
-        compare=st.selectbox('비교 대상',[r['id'] for r in others],format_func=lambda identifier:f"{by_id[identifier]['date']} · {by_id[identifier]['reason']} · {identifier}",key='classic_compare_record_'+kind)
-        other=by_id[compare]
-        values=[v for r in [record,other] for line in r['grid'] for v in line if numeric(v)]
+    mode=st.segmented_control('측정 보기',['단일 상세','전체 측정 비교'],default='단일 상세',key='classic_all_compare_mode_'+kind)
+    if mode=='전체 측정 비교':
+        values=[v for r in rows for line in r['grid'] for v in line if numeric(v)]
         limits=(min(values),max(values)) if values else (0,0)
-        for panel,item in zip(st.columns(2),[other,record]):
-            panel.subheader(item['date']);panel.caption(item['reason'])
-            panel.markdown(diagram_svg(item['grid'],spacing,limits),unsafe_allow_html=True)
-        delta=[[b-a if numeric(a) and numeric(b) else None for a,b in zip(left,right)] for left,right in zip(other['grid'],record['grid'])]
-        st.caption('차이 = 선택 기록 − 비교 대상' + ('' if spacing else ' · 두 위치도는 같은 색상 범위를 사용합니다.'))
-        st.markdown(measurement_table(delta,spacing),unsafe_allow_html=True)
+        st.subheader('Chamber '+chamber+' · '+kind+' · 전체 '+str(len(rows))+'건')
+        st.caption('최신 측정부터 모든 기록을 표시합니다. 같은 날짜의 기록도 각각 유지합니다.'+
+                   (' Spacing 위치와 885 mils 기준은 동일합니다.' if spacing else ' 모든 Flatness 위치도는 동일한 색상 범위를 사용합니다.'))
+        for offset in range(0,len(rows),3):
+            for panel,item in zip(st.columns(3),rows[offset:offset+3]):
+                with panel:
+                    st.subheader(item['date'])
+                    st.caption('원본 기록 '+str(item['id'])+' · '+(item.get('reason') or '사유 미기재'))
+                    st.markdown(diagram_svg(item['grid'],spacing,limits,show_position_labels=False),unsafe_allow_html=True)
+                    st.caption('Diffuser S/N: '+(item.get('diffuser_sn') or '—')+' · Susceptor S/N: '+(item.get('susceptor_sn') or '—'))
+                    st.caption('최소 '+number(item['min'])+' · 최대 '+number(item['max'])+' · Max−Min '+number(item['range'])+
+                               ' · 측정 '+str(item['count'])+'/'+str(item['total']))
+        table_rows=[]
+        for item in rows:
+            table_rows.append({'측정일':item['date'],'기록':item['id'],'사유':item.get('reason',''),
+                               **{f'R{i}C{j}':value for i,line in enumerate(item['grid'],1) for j,value in enumerate(line,1)}})
+        with st.expander('전체 측정값 표'):
+            st.dataframe(pd.DataFrame(table_rows),hide_index=True,use_container_width=True)
     else:
+        by_id={r['id']:r for r in rows}
+        selected=st.selectbox('측정 기록',[r['id'] for r in rows],format_func=lambda identifier:f"{by_id[identifier]['date']} · {by_id[identifier]['reason']} · {identifier}",key='classic_measure_'+kind)
+        record=by_id[selected]
+        st.caption(f"Diffuser S/N: {record.get('diffuser_sn') or '—'} · Susceptor S/N: {record.get('susceptor_sn') or '—'}")
         left,right=st.columns(2)
         left.subheader(kind+' 실측 데이터');right.subheader(kind+' 측정 위치도')
         if spacing:
