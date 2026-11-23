@@ -101,17 +101,21 @@ with st.sidebar:
 filters={};chamber='전체';section='설비 현황';flatness='Diffuser';query=''
 if page=='PENDING 현황':
     all_rows=model.pending_frame(initial['pending'])
-    with st.sidebar:
-        st.subheader('PENDING 현황 필터')
-        scope=cards('조회 범위',['주요 펜딩','고객사 요청','보조 시트','전체'],'classic_scope') if generation=='6G' else '주요 항목'
-        if st.session_state.get('classic_pending_scope_previous')!=scope:
-            for key in ['classic_equipment','classic_fields','classic_states','classic_drill']:
-                st.session_state.pop(key,None)
-            st.session_state['classic_pending_scope_previous']=scope
-        frame=model.filter_pending(all_rows,scope=scope)
+    st.header(generation+' · PENDING 현황')
+    scope=cards('조회 대상',['주요 펜딩','고객사 요청','보조 시트','전체'],'classic_scope',True) if generation=='6G' else '주요 항목'
+    if st.session_state.get('classic_pending_scope_previous')!=scope:
+        for key in ['classic_equipment','classic_fields','classic_states','classic_drill']:
+            st.session_state.pop(key,None)
+        st.session_state['classic_pending_scope_previous']=scope
+    frame=model.filter_pending(all_rows,scope=scope)
+    filter_columns=st.columns([1,1,1,2])
+    with filter_columns[0]:
         equipment=st.multiselect('설비',sorted(frame['설비'].unique()),key='classic_equipment')
+    with filter_columns[1]:
         categories=st.multiselect('분야',sorted(frame['분야'].unique()),key='classic_fields')
+    with filter_columns[2]:
         states=st.multiselect('상태',['완료','미완료','확인 필요'],key='classic_states')
+    with filter_columns[3]:
         search=st.text_input('검색',placeholder='내용·Unit·담당자·조치내용',key='classic_search')
     filters={'scope':scope,'equipment':equipment,'categories':categories,'states':states,'query':search}
     signature=str(filters)
@@ -157,7 +161,7 @@ def content():
     if page=='H/W · 공정 Map':
         if hw_unit=='45호기':process45_views.process45_panel(current.get('process',{}),current['hw'])
         else:process_views.process_panel(current.get('process',{}),current['hw'])
-    elif page=='PENDING 현황':views.pending(current['pending'],filters,generation)
+    elif page=='PENDING 현황':views.pending(current['pending'],filters,generation,show_header=False)
     elif page=='PENDING List REV관리':views.revisions(current['pending'],generation)
     elif generation=='8G':hw86_views.hardware(current['hw'])
     else:views.hardware(current['hw'],chamber,section,flatness,query,generation+' · '+hw_unit)
