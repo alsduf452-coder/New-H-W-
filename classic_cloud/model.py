@@ -28,27 +28,17 @@ def pending_frame(snapshot):
         rows.append({'ID':detail['ID'],'범위':detail.get('범위','주요 5개 분야'),'설비':text(detail.get('호기')) or '미기재','분야':detail.get('분야',detail.get('시트','')),'상태':'완료' if text(detail.get('완료여부')).upper() in ('O','○','완료') else '미완료','Unit':text(detail.get('Unit명')),'내용':text(detail.get('불합리 및 이슈 내용')),'담당자':text(detail.get('담당자')),'목표일':text(detail.get('목표일 원문')),'발생일':text(detail.get('발생일')),'원인':text(detail.get('사유 or 원인')),'진행 사항':text(detail.get('진행 사항',detail.get('진행 사항 (미팅내용)'))),'조치내용':text(detail.get('조치내용')),'완료일':text(detail.get('완료일')),'조치자':text(detail.get('담당자(조치자)')),'45호기 적용 여부':text(detail.get('45호기 적용 여부')),'시트':detail.get('시트',''),**{key:text(detail.get(key)) for key in ['개선 Item','상세 내용','원본 상태','진척도','비고','관련 메모']}})
     from classic_cloud.customer_requests import customer_rows
     rows.extend(customer_rows(previews, COLS))
-    for name in ['software불합리','설비알람']:
-        for n,row in enumerate(previews.get(name,{}).get('rows',[]),1):
-            val=lambda col: text(row[col-1]) if col<=len(row) else ''
-            number=val(1)
-            if not re.fullmatch(r'\d+(?:\.0)?',number):continue
-            item={key:'' for key in COLS}
-            item.update(ID=f'aux-{name}-{n}',범위='보조 시트',분야=name,시트=name,상태='미완료')
-            if name=='software불합리':
-                item.update(설비=val(2),상태='완료' if val(3) in ('O','○','완료') else '미완료',목표일=val(4),완료일=val(5),내용=val(6),**{'진행 사항':val(7)})
-            else:
-                item.update(설비=val(3),발생일=val(2),Unit=val(4),내용=val(5)+'\n'+val(6),원인=val(7),조치내용=val(8),**{'진행 사항':val(9)})
-            item['설비']=item['설비'] or '미기재'
-            if item['내용']:rows.append(item)
     frame=pd.DataFrame(rows,columns=COLS)
+    # Preserve original worksheet names and internal IDs; rename only 6G display categories.
+    main=frame['범위'].eq('주요 5개 분야')
+    frame.loc[main,'분야']=frame.loc[main,'분야'].replace({'HW(설계)':'설계','H/W':'설계','기타':'생기','S/W':'SW'})
     frame['목표일']=frame['목표일'].map(display_target_date)
     return frame
 
 
 def filter_pending(frame, scope='주요 5개 분야', equipment=(), categories=(), states=(), query=''):
     result=frame.copy()
-    scope={'주요 펜딩':'주요 5개 분야','전체':'전체 시트'}.get(scope,scope)
+    scope={'주요 Pending':'주요 5개 분야','주요 펜딩':'주요 5개 분야','전체':'전체 시트'}.get(scope,scope)
     if scope!='전체 시트':result=result[result['범위']==scope]
     for field,values in [('설비',equipment),('분야',categories),('상태',states)]:
         if values:result=result[result[field].isin(values)]
