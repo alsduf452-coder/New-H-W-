@@ -21,12 +21,6 @@ mode=settings.get('storage',{}).get('mode','demo')
 with st.sidebar:
     generation=cards('설비 세대',['6G','8G'],'classic_generation',True)
     st.caption('PENDING은 선택한 세대의 파일을 조회합니다. H/W 설비 선택은 H/W 조회에 적용됩니다.')
-if generation=='6G':
-    with st.columns([1,2])[0]:
-        hw_unit=st.selectbox('H/W 설비',['45호기','15호기'],key='classic_hw_unit')
-else:
-    hw_unit='A6 BP-04'
-    st.caption('8.6G · A6 BP-04')
 
 if st.session_state.get('classic_previous_generation')!=generation:
     for key in ['classic_equipment','classic_fields','classic_states','classic_search','classic_scope','classic_drill','classic_filter_signature','classic_rev_query']:
@@ -76,6 +70,13 @@ elif mode=='postgres':
         return {'hw':hw,'pending':database.read(pending_source),'process':process}
 else:
     st.error('저장 모드 설정을 확인해주세요.');st.stop()
+
+if generation=='6G':
+    with st.columns([1,2])[0]:
+        hw_unit=st.selectbox('H/W 설비',['45호기','15호기'],key='classic_hw_unit')
+else:
+    hw_unit='A6 BP-04'
+    st.caption('8.6G · A6 BP-04')
 
 try:
     initial=read_sources()
