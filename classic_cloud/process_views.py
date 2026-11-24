@@ -24,34 +24,8 @@ def process_panel(process_snapshot,hw_snapshot):
     st.header('6G · 15호기 H/W 형상 · 공정 Map 비교')
     data=process_snapshot.get('previews',{}).get('__process_data__')
     if not data:st.info('15호기 공정 Map 파일 수신을 기다리고 있습니다.');return
-    layout=st.segmented_control('화면 배치',['기본 보기','한 화면 보기'],default='한 화면 보기',key='process_layout_15')
-    if layout=='한 화면 보기':
-        from classic_cloud.compact_process import compact_panel
-        compact_panel('15',data,hw_snapshot)
-        return
-    records=data['records']
-    chamber=st.selectbox('공정 PC',list('ABCDE'),key='process15_pc')
-    runs=sorted([r for r in records if r['chamber']==chamber],key=lambda r:(r['date'],r['source_cell']),reverse=True)
-    if not runs:st.info('평가 기록이 없습니다.');return
-    comparison_mode = comparison_navigation('15', chamber)
-    by_id={r['id']:r for r in runs}
-    run=by_id[st.selectbox('공정 평가 기록',list(by_id),format_func=lambda k:by_id[k]['date']+' · '+by_id[k]['recipe']+' · '+by_id[k]['source_cell'],key='process15_run_'+chamber)]
-    if comparison_panel('15', chamber, runs, run, data, hw_snapshot, comparison_mode):
-        return
-    st.caption('평가일 '+run['date']+' · PC '+chamber+' · Recipe '+run['recipe']+' · Dep Time '+run['dep_time'])
-    measurements=hw_snapshot.get('previews',{}).get('__hw_data__',{}).get('measurements',[])
-    for col,kind in zip(st.columns(3),KINDS):
-        with col:
-            st.subheader(kind)
-            linked,reason=link_measurement(run,measurements,kind)
-            if linked:
-                st.caption('H/W 측정일 '+linked['date'])
-                st.markdown(diagram_svg(linked['grid'],kind=='Spacing',show_position_labels=False,match_spacing_size=True),unsafe_allow_html=True)
-            else:
-                st.markdown('<div style="height:250px;border:1px solid #cbd5e1;display:flex;align-items:center;justify-content:center">연결 확인 필요</div>',unsafe_allow_html=True)
-                st.caption(reason)
-    st.markdown(process_comparison_html(run),unsafe_allow_html=True)
-    st.caption('출처: Unif 결과 데이터!'+run['source_cell']+' · 좌표 숫자는 표시하지 않습니다. Unif.는 Excel 원본값입니다.')
+    from classic_cloud.compact_process import compact_panel
+    compact_panel('15',data,hw_snapshot)
 
 
 def process_comparison_html(run):
