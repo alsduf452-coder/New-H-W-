@@ -25,9 +25,9 @@ def measurement_chart(grid, title, spacing=False, process=False):
     html = map_html(display_grid).replace('Data 없음', '—') if process else diagram_svg(display_grid, spacing, show_position_labels=False,match_spacing_size=True)
     if process:
         html = ('<div style="display:grid;grid-template-columns:28px minmax(0,1fr) 28px;align-items:center;gap:8px">'
-                '<div style="justify-self:center;writing-mode:vertical-rl;transform:rotate(180deg);white-space:nowrap;color:#075985;font-size:13px">G/V 측</div>'
+                '<div style="justify-self:center;writing-mode:vertical-rl;transform:rotate(180deg);white-space:nowrap;color:#075985;font-size:13px">G/V</div>'
                 '<div style="min-width:0">'+html+'</div>'
-                '<div style="justify-self:center;writing-mode:vertical-rl;white-space:nowrap;color:#075985;font-size:13px">Window 측</div></div>')
+                '<div style="justify-self:center;writing-mode:vertical-rl;white-space:nowrap;color:#075985;font-size:13px">WIN</div></div>')
     st.markdown(html, unsafe_allow_html=True)
 
 
