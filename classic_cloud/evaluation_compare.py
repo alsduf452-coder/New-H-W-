@@ -190,7 +190,12 @@ def comparison_panel(unit, chamber, runs, run, data, hw, mode):
     if not available:
         st.info('같은 공정의 비교 가능한 평가 기록이 없습니다.')
         return True
-    count=st.radio('비교 대상 수',[1,2],horizontal=True,key=prefix+'_count')
+    with st.container(border=True):
+        count=st.select_slider('비교 대상 수',options=[1,2,3,4],value=1,
+                               format_func=lambda value:str(value)+'개',key=prefix+'_count_slider')
+        st.caption(f'기준 1개 + 비교 {count}개 · 총 {count+1}개 평가')
+    if count>=3:
+        st.caption('비교 표는 좌우로 스크롤해 모든 평가를 확인할 수 있습니다.')
     selected=[]
     for index, panel in enumerate(st.columns(count)):
         with panel:
@@ -203,7 +208,9 @@ def comparison_panel(unit, chamber, runs, run, data, hw, mode):
                 continue
             chamber_key=slot+'_chamber'
             if st.session_state.get(chamber_key) not in chambers:
-                st.session_state[chamber_key]=chamber if chamber in chambers else chambers[0]
+                used={chamber}|{r['chamber'] for r in selected}
+                unused=[c for c in chambers if c not in used]
+                st.session_state[chamber_key]=unused[0] if unused else chamber if chamber in chambers else chambers[0]
             other_chamber=st.selectbox('비교 챔버',chambers,key=chamber_key)
             candidates=sorted([r for r in remaining if r['chamber']==other_chamber],
                               key=lambda r:(r['date'],r.get('source_cell','')),reverse=True)
