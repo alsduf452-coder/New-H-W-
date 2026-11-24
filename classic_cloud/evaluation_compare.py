@@ -233,5 +233,19 @@ def comparison_panel(unit, chamber, runs, run, data, hw, mode, count=None):
     from streamlit.components.v1 import declare_component
     drag_view=declare_component('process_comparison_drag',path=str(Path(__file__).parent/'drag_compare'))
     st.caption('표를 마우스로 누른 채 좌우로 끌어 이동하세요. 터치·방향키·가로 스크롤도 사용할 수 있습니다.')
-    drag_view(html=comparison_html(unit, [run]+selected, data, hw, delta),key=prefix+'_drag_view',default=None)
+    drag_view(html=comparison_html(unit, [run]+selected, data, hw, delta),font_css=comparison_font_css(),key=prefix+'_drag_view',default=None)
     return True
+
+
+@st.cache_data
+def comparison_font_css():
+    """Use the font shipped with this deployed Streamlit version."""
+    import base64
+    from pathlib import Path
+    import streamlit
+    fonts=sorted((Path(streamlit.__file__).parent/'static').rglob('*SourceSans*.woff2'))
+    regular=next((p for p in fonts if 'Upright' in p.name),None)
+    if regular is not None:
+        encoded=base64.b64encode(regular.read_bytes()).decode('ascii')
+        return '@font-face{font-family:"Source Sans";src:url(data:font/woff2;base64,'+encoded+') format("woff2");font-weight:100 900;font-style:normal;font-display:swap;}'
+    return ''
