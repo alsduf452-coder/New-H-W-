@@ -196,7 +196,7 @@ def measurement(hw,chamber,kind):
         left,right=st.columns(2)
         left.subheader(kind+' 실측 데이터');right.subheader(kind+' 측정 위치도')
         if spacing:
-            for panel in (left,right):panel.caption('▲ G/V 측: ①⑥② / 중앙: ⑨⑤⑦ / ▼ Window 측: ④⑧③')
+            for panel in (left,right):panel.caption('▲ G/V: ①⑥② / 중앙: ⑨⑤⑦ / ▼ WIN: ④⑧③')
         left.markdown(spacing_table_html(record['grid']) if spacing else measurement_table(record['grid']),unsafe_allow_html=True)
         right.markdown(diagram_svg(record['grid'],spacing),unsafe_allow_html=True)
         st.dataframe([{'최소값':number(record['min']),'최대값':number(record['max']),'Max−Min':number(record['range']),'Center (⑤)' if spacing else 'Center (R3C4)':number(record['center']),'측정 개수':f"{record['count']}/{record['total']}"}],hide_index=True,use_container_width=True)
