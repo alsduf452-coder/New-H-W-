@@ -34,7 +34,7 @@ def compact_html(unit,run,data,hw):
         grid=display_grid(unit,kind,measured['grid']) if measured else []
         chart=hardware_table(grid,kind=='Spacing',limits([grid])) if grid else '<div class="fit-empty">연결 확인 필요</div>'
         caption='H/W 측정일 '+measured['date'] if measured else reason
-        direction='G/V 측 ↑ · Window 측 ↓' if kind=='Spacing' else '← G/V 측 · Window 측 →'
+        direction='G/V ↑ · WIN ↓' if kind=='Spacing' else '← G/V · WIN →'
         cards.append('<section><h3>'+kind+'</h3><small>'+escape(caption)+'</small><div class="fit-hw">'+chart+'</div><small>'+direction+'</small></section>')
     u=uniformity(run,unit)
     metrics=run.get('metrics',{}) if unit=='45' else {'Dep Time':run.get('dep_time'),'HCG':run.get('hcg')}
@@ -63,4 +63,4 @@ def compact_html(unit,run,data,hw):
     .fit-metrics>div{background:#edf2f7;border-radius:5px;padding:4px 8px;overflow-wrap:anywhere}
     .fit-metrics strong{font-size:15px}
     @media(max-width:850px){.fit-top{grid-template-columns:1fr}.fit-bottom{grid-template-columns:1fr}}
-    </style><div class="fit-board"><div class="fit-meta">'''+escape(meta)+'</div><div class="fit-top">'+''.join(cards)+'</div><div class="fit-bottom"><section><h3>'+escape('D/R 공정 Map' if unit=='15' else run['recipe']+' 공정 Map')+'</h3><div class="fit-map"><span>G/V 측</span><div class="fit-map-body">'+map_html(run['grid'])+'</div><span>Window 측</span></div></section><section><h3>공정 결과</h3><div class="fit-unif">Unif. '+(f'{u:.2f}%' if u is not None else 'Data 없음')+'</div><div class="fit-metrics">'+metrics_html+'</div></section></div></div>'
+    </style><div class="fit-board"><div class="fit-meta">'''+escape(meta)+'</div><div class="fit-top">'+''.join(cards)+'</div><div class="fit-bottom"><section><h3>'+escape('D/R 공정 Map' if unit=='15' else run['recipe']+' 공정 Map')+'</h3><div class="fit-map"><span>G/V</span><div class="fit-map-body">'+map_html(run['grid'])+'</div><span>WIN</span></div></section><section><h3>공정 결과</h3><div class="fit-unif">Unif. '+(f'{u:.2f}%' if u is not None else 'Data 없음')+'</div><div class="fit-metrics">'+metrics_html+'</div></section></div></div>'
