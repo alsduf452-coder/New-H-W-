@@ -8,7 +8,7 @@ from process_map import KINDS
 
 
 def compact_panel(unit, data, hw):
-    columns=st.columns([1,3,2])
+    columns=st.columns([1,3.1,1.8,0.8])
     with columns[0]:
         chamber=st.selectbox('공정 PC',list('ABCDE'),key='fit_pc_'+unit)
     runs=sorted([r for r in data['records'] if r['chamber']==chamber],key=lambda r:(r['date'],r.get('source_cell','')),reverse=True)
@@ -20,7 +20,10 @@ def compact_panel(unit, data, hw):
     run=by_id[selected]
     with columns[2]:mode=comparison_navigation(unit,chamber)
     if mode==COMPARE:
-        comparison_panel(unit,chamber,runs,run,data,hw,mode);return
+        with columns[3]:
+            count=st.selectbox('비교 대상 수',[1,2,3,4],format_func=lambda n:str(n)+'개',
+                               key=f'compare_{unit}_{chamber}_{run["id"]}_count_select')
+        comparison_panel(unit,chamber,runs,run,data,hw,mode,count=count);return
     st.markdown(compact_html(unit,run,data,hw),unsafe_allow_html=True)
     with st.expander('평가 상세 · S/N · 메모'):
         st.write({k:run.get(k,'') for k in ['date','recipe','dep_time','hcg','diffuser_sn','susceptor_sn','notes','source_cell']})
