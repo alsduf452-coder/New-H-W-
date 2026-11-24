@@ -1,14 +1,14 @@
 """Compact process view; uses existing, verified measurement associations."""
 from html import escape
 import streamlit as st
-from classic_cloud.evaluation_compare import (comparison_navigation, comparison_panel, open_comparison,
+from classic_cloud.evaluation_compare import (comparison_navigation, comparison_panel,
     linked_measurement, display_grid, hardware_table, limits, uniformity, COMPARE)
 from classic_cloud.visuals import numeric, number
 from process_map import KINDS
 
 
 def compact_panel(unit, data, hw):
-    columns=st.columns([1,3,2,1.5])
+    columns=st.columns([1,3,2])
     with columns[0]:
         chamber=st.selectbox('공정 PC',list('ABCDE'),key='fit_pc_'+unit)
     runs=sorted([r for r in data['records'] if r['chamber']==chamber],key=lambda r:(r['date'],r.get('source_cell','')),reverse=True)
@@ -19,9 +19,6 @@ def compact_panel(unit, data, hw):
         selected=st.selectbox('공정 평가 기록',list(by_id),format_func=lambda k:by_id[k]['date']+' · '+by_id[k]['recipe']+' · '+by_id[k]['source_cell'],key='fit_run_'+unit+'_'+chamber)
     run=by_id[selected]
     with columns[2]:mode=comparison_navigation(unit,chamber)
-    with columns[3]:
-        st.caption('평가 비교')
-        st.button('이 평가 기준으로 비교',key='fit_compare_'+unit,on_click=open_comparison,args=(unit,chamber))
     if mode==COMPARE:
         comparison_panel(unit,chamber,runs,run,data,hw,mode);return
     st.markdown(compact_html(unit,run,data,hw),unsafe_allow_html=True)
