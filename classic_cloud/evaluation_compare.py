@@ -248,4 +248,11 @@ def comparison_font_css():
     if regular is not None:
         encoded=base64.b64encode(regular.read_bytes()).decode('ascii')
         return '@font-face{font-family:"Source Sans";src:url(data:font/woff2;base64,'+encoded+') format("woff2");font-weight:100 900;font-style:normal;font-display:swap;}'
-    return ''
+    # Older Streamlit releases ship separate regular/semibold/bold assets.
+    rules=[]
+    for weight,word in [(400,'Regular'),(600,'SemiBold'),(700,'Bold')]:
+        asset=next((p for p in fonts if word.lower() in p.name.lower() and 'italic' not in p.name.lower()),None)
+        if asset is not None:
+            encoded=base64.b64encode(asset.read_bytes()).decode('ascii')
+            rules.append('@font-face{font-family:"Source Sans";src:url(data:font/woff2;base64,'+encoded+') format("woff2");font-weight:'+str(weight)+';font-style:normal;font-display:swap;}')
+    return ''.join(rules)
