@@ -1,0 +1,29 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><style>
+html,body{margin:0;padding:0;background:transparent;color:#17324d;font-family:Arial,sans-serif;font-size:14px}*{box-sizing:border-box}h3{font-size:18px}h4{padding:0}table{border-collapse:collapse}th,td{overflow-wrap:anywhere}.classic-table{width:100%;table-layout:fixed;font-size:13px}.classic-table th,.classic-table td{border:1px solid #d5e0eb;padding:8px}.classic-table th{background:#e7eef6}
+#root .eval-scroll{cursor:grab;touch-action:pan-x pan-y;user-select:none;overscroll-behavior-x:contain}
+#root .eval-scroll.dragging{cursor:grabbing}#root .eval-scroll:focus-visible{outline:2px solid #3979bb;outline-offset:-2px}
+</style></head><body><div id="root"></div><script>
+const root=document.getElementById('root');
+let lastHeight=0;
+function send(type,extra={}){window.parent.postMessage({isStreamlitMessage:true,type,...extra},'*');}
+function resize(){const height=Math.ceil(root.getBoundingClientRect().height)+4;if(height!==lastHeight){lastHeight=height;send('streamlit:setFrameHeight',{height});}}
+function render(html){
+ const previous=root.querySelector('.eval-scroll');const offset=previous?previous.scrollLeft:0;
+ root.innerHTML=html;
+ const scroller=root.querySelector('.eval-scroll');
+ if(scroller){
+  scroller.tabIndex=0;scroller.setAttribute('role','region');scroller.setAttribute('aria-label','공정 평가 비교. 마우스로 좌우로 끌거나 방향키로 이동');
+  scroller.scrollLeft=offset;let drag=null;
+  scroller.addEventListener('pointerdown',e=>{if(e.pointerType!=='mouse'||e.button!==0||e.target.closest('button,a,input,select,summary'))return;drag={id:e.pointerId,x:e.clientX,left:scroller.scrollLeft};scroller.setPointerCapture(e.pointerId);scroller.classList.add('dragging');});
+  scroller.addEventListener('pointermove',e=>{if(!drag||drag.id!==e.pointerId)return;scroller.scrollLeft=drag.left-(e.clientX-drag.x);e.preventDefault();});
+  function end(e){if(!drag||drag.id!==e.pointerId)return;drag=null;scroller.classList.remove('dragging');if(scroller.hasPointerCapture(e.pointerId))scroller.releasePointerCapture(e.pointerId);}
+  ['pointerup','pointercancel','lostpointercapture'].forEach(t=>scroller.addEventListener(t,end));
+  scroller.addEventListener('keydown',e=>{if(e.key==='ArrowRight'||e.key==='ArrowLeft'){scroller.scrollLeft+=e.key==='ArrowRight'?160:-160;e.preventDefault();}});
+ }
+ requestAnimationFrame(resize);
+}
+window.addEventListener('message',e=>{if(e.source===window.parent&&e.data.type==='streamlit:render')render(e.data.args.html);});
+new ResizeObserver(resize).observe(root);
+window.addEventListener('resize',resize);
+send('streamlit:componentReady',{apiVersion:1});
+</script></body></html>
