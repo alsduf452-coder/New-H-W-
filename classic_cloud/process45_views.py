@@ -37,57 +37,5 @@ def process45_panel(snapshot, hw_snapshot=None):
     if not data or data.get('equipment') != '45호기':
         st.info('45호기 공정 파일 수신을 기다리고 있습니다.')
         return
-    layout=st.segmented_control('화면 배치',['기본 보기','한 화면 보기'],default='한 화면 보기',key='process_layout_45')
-    if layout=='한 화면 보기':
-        from classic_cloud.compact_process import compact_panel
-        compact_panel('45',data,hw_snapshot or {})
-        return
-    chamber = st.selectbox('공정 PC', list('ABCDE'), key='process45_pc')
-    runs = sorted([r for r in data['records'] if r['chamber'] == chamber],
-                  key=lambda r: (r['date'], r['mt_date'], r['recipe'], r['source_cell']), reverse=True)
-    if not runs:
-        st.info('조회할 공정 결과가 없습니다.')
-        return
-    comparison_mode = comparison_navigation('45', chamber)
-    by_id = {r['id']: r for r in runs}
-    def label(identifier):
-        run = by_id[identifier]
-        suffix = ' · MT '+run['mt_date'] if run['mt_date'] and run['mt_date'] != run['date'] else ''
-        return run['date']+' · '+run['recipe']+suffix+' · '+run['source_cell']
-    selected = st.selectbox('공정 평가 기록', list(by_id), format_func=label, key='process45_run_'+chamber)
-    run = by_id[selected]
-    if comparison_panel('45', chamber, runs, run, data, hw_snapshot or {}, comparison_mode):
-        return
-    hw_measurements = (hw_snapshot or {}).get('previews', {}).get('__hw_data__', {}).get('measurements', [])
-    st.caption('평가일 '+run['date']+' · PC '+chamber+' · '+run['recipe'])
-    st.caption('Diffuser S/N: '+(run['diffuser_sn'] or '미기재')+' · Susceptor S/N: '+(run['susceptor_sn'] or '미기재'))
-    for col, kind in zip(st.columns(3), KINDS):
-        with col:
-            st.subheader(kind)
-            measured, reason = (link_spacing_history(run, data['measurements'], hw_measurements)
-                                if kind == 'Spacing' else link_process45(run, data['measurements'], kind))
-            if measured:
-                st.caption('H/W 측정일 '+measured['date'])
-                measurement_chart(measured['grid'], kind, kind == 'Spacing')
-            else:
-                st.caption(reason)
-    has_map = any(numeric(v) for row in run['grid'] for v in row)
-    metrics = []
-    for key, value in run['metrics'].items():
-        formatted = f'{value*100:.2f}%' if key == 'Unif.' and numeric(value) else f'{value:g}' if numeric(value) else str(value)
-        metrics.append({'항목': key, '값': formatted})
-    if has_map:
-        left, right = st.columns([3, 2])
-        with left:
-            st.subheader(run['recipe']+' 공정 Map')
-            measurement_chart(run['grid'], run['recipe']+' 공정 Map', process=True)
-        with right:
-            st.subheader('공정 결과')
-            if metrics:
-                st.table(pd.DataFrame(metrics).set_index('항목'), alt='실제 값이 있는 공정 결과 항목')
-    elif metrics:
-        left, _ = st.columns([1, 1])
-        with left:
-            st.subheader('공정 결과')
-            st.table(pd.DataFrame(metrics).set_index('항목'), alt='실제 값이 있는 공정 결과 항목')
-
+    from classic_cloud.compact_process import compact_panel
+    compact_panel('45',data,hw_snapshot or {})
