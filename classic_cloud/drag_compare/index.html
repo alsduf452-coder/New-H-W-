@@ -1,5 +1,5 @@
-<!doctype html><html lang="ko"><head><meta charset="utf-8"><style>
-html,body{margin:0;padding:0;background:transparent;color:#17324d;font-family:Arial,sans-serif;font-size:14px}*{box-sizing:border-box}h3{font-size:18px}h4{padding:0}table{border-collapse:collapse}th,td{overflow-wrap:anywhere}.classic-table{width:100%;table-layout:fixed;font-size:13px}.classic-table th,.classic-table td{border:1px solid #d5e0eb;padding:8px}.classic-table th{background:#e7eef6}
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><style id="app-font"></style><style>
+html,body{margin:0;padding:0;background:transparent;color:#17324d;font-family:"Source Sans",sans-serif;font-size:16px;font-weight:400;line-height:1.6}*{box-sizing:border-box}h3{font-size:20px;font-weight:600;line-height:1.2}h4{padding:0;font-weight:600}table{border-collapse:collapse}th,td{overflow-wrap:anywhere}.classic-table{width:100%;table-layout:fixed;font-size:13px}.classic-table th,.classic-table td{border:1px solid #d5e0eb;padding:8px}.classic-table th{background:#e7eef6}
 #root .eval-scroll{cursor:grab;touch-action:pan-x pan-y;user-select:none;overscroll-behavior-x:contain}
 #root .eval-scroll.dragging{cursor:grabbing}#root .eval-scroll:focus-visible{outline:2px solid #3979bb;outline-offset:-2px}
 </style></head><body><div id="root"></div><script>
@@ -7,7 +7,8 @@ const root=document.getElementById('root');
 let lastHeight=0;
 function send(type,extra={}){window.parent.postMessage({isStreamlitMessage:true,type,...extra},'*');}
 function resize(){const height=Math.ceil(root.getBoundingClientRect().height)+4;if(height!==lastHeight){lastHeight=height;send('streamlit:setFrameHeight',{height});}}
-function render(html){
+function render(html,fontCss){
+ document.getElementById('app-font').textContent=fontCss||'';
  const previous=root.querySelector('.eval-scroll');const offset=previous?previous.scrollLeft:0;
  root.innerHTML=html;
  const scroller=root.querySelector('.eval-scroll');
@@ -21,8 +22,9 @@ function render(html){
   scroller.addEventListener('keydown',e=>{if(e.key==='ArrowRight'||e.key==='ArrowLeft'){scroller.scrollLeft+=e.key==='ArrowRight'?160:-160;e.preventDefault();}});
  }
  requestAnimationFrame(resize);
+ document.fonts.ready.then(resize);
 }
-window.addEventListener('message',e=>{if(e.source===window.parent&&e.data.type==='streamlit:render')render(e.data.args.html);});
+window.addEventListener('message',e=>{if(e.source===window.parent&&e.data.type==='streamlit:render')render(e.data.args.html,e.data.args.font_css);});
 new ResizeObserver(resize).observe(root);
 window.addEventListener('resize',resize);
 send('streamlit:componentReady',{apiVersion:1});
