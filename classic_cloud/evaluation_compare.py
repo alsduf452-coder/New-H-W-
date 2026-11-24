@@ -134,7 +134,7 @@ def comparison_html(unit, selected, data, hw, delta=False):
                 rows.append('<tr><th>'+escape(key)+'</th><td>'+escape(text)+'</td></tr>')
             cells.append('<section><h3>공정 결과</h3><table class="classic-table">'+''.join(rows)+'</table></section>')
     return '''<style>
-    .eval-scroll{overflow-x:auto}.eval-grid{display:grid;gap:4px 8px;align-items:stretch}
+    .eval-scroll{overflow-x:auto;transform:rotateX(180deg);padding-bottom:8px}.eval-scroll>.eval-grid{transform:rotateX(180deg)}.eval-grid{display:grid;gap:4px 8px;align-items:stretch}
     .eval-grid section{min-width:0;border:1px solid #cbd5e1;border-radius:10px;padding:12px;background:#f8fafc}
     .eval-grid h3{margin:0 0 8px}.eval-caption{color:#60758b;min-height:32px;font-size:11px;overflow-wrap:anywhere}
     .eval-grid .eval-hardware{display:grid;grid-template-columns:86px minmax(0,1fr);gap:6px;align-items:center;padding:4px 8px;border-radius:3px;border-width:0 0 1px}
