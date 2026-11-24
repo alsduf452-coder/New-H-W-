@@ -98,7 +98,7 @@ def measurement_table(grid, spacing=False):
     labels=[[1,6,2],[9,5,7],[4,8,3]]
     cols=len(grid[0]);rows=[]
     for i,line in enumerate(grid):
-        cells=['<th>'+('G/V 측' if i==0 else 'Window 측' if i==2 else '중앙' if spacing else f'Row {i+1}')+'</th>'] if spacing else ['<th>Row '+str(i+1)+'</th>']
+        cells=['<th>'+('G/V' if i==0 else 'WIN' if i==2 else '중앙' if spacing else f'Row {i+1}')+'</th>'] if spacing else ['<th>Row '+str(i+1)+'</th>']
         for j,v in enumerate(line):
             label='P'+str(labels[i][j]) if spacing else f'R{i+1}C{j+1}'
             cells.append('<td><small>'+label+'</small><strong>'+escape(number(v))+'</strong></td>')
@@ -117,14 +117,14 @@ def diagram_svg(grid, spacing=False, limits=None, orientation='columns', transpo
     low,high=limits or ((min(values),max(values)) if values else (0,0))
     nr,nc=len(grid),len(grid[0]);width=(620 if match_spacing_size else 560)/nc;height=(420 if match_spacing_size else 310)/nr
     out=['<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 680 440" style="width:100%;height:auto;display:block" role="img" aria-label="측정 위치도">','<rect x="40" y="40" width="600" height="360" rx="20" fill="#d9e2ef" stroke="#64748b" stroke-width="3"/>']
-    if spacing:out+=['<text x="340" y="25" text-anchor="middle" fill="#075985">G/V 측</text>','<text x="340" y="425" text-anchor="middle" fill="#92400e">Window 측</text>']
-    elif orientation=='rows':out+=['<text x="340" y="25" text-anchor="middle" fill="#075985">▲ G/V 측</text>','<text x="340" y="425" text-anchor="middle" fill="#92400e">▼ Window 측</text>']
-    else:out+=['<text x="20" y="220" transform="rotate(-90 20 220)" text-anchor="middle" fill="#075985">G/V · Col 1</text>','<text x="663" y="220" transform="rotate(90 663 220)" text-anchor="middle" fill="#92400e">Window · Col 7</text>']
+    if spacing:out+=['<text x="340" y="25" text-anchor="middle" fill="#075985">G/V</text>','<text x="340" y="425" text-anchor="middle" fill="#92400e">WIN</text>']
+    elif orientation=='rows':out+=['<text x="340" y="25" text-anchor="middle" fill="#075985">▲ G/V</text>','<text x="340" y="425" text-anchor="middle" fill="#92400e">▼ WIN</text>']
+    else:out+=['<text x="20" y="220" transform="rotate(-90 20 220)" text-anchor="middle" fill="#075985">G/V</text>','<text x="663" y="220" transform="rotate(90 663 220)" text-anchor="middle" fill="#92400e">WIN</text>']
     if match_spacing_size:
         out=['<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 510" class="measurement-svg" role="img" aria-label="Flatness 측정 위치도">',
              '<rect x="40" y="45" width="620" height="420" rx="10" fill="#d9e2ef" stroke="#64748b" stroke-width="3"/>',
-             '<text x="20" y="255" transform="rotate(-90 20 255)" text-anchor="middle" fill="#075985" font-size="18">G/V 측</text>',
-             '<text x="680" y="255" transform="rotate(90 680 255)" text-anchor="middle" fill="#92400e" font-size="18">Window 측</text>']
+             '<text x="20" y="255" transform="rotate(-90 20 255)" text-anchor="middle" fill="#075985" font-size="18">G/V</text>',
+             '<text x="680" y="255" transform="rotate(90 680 255)" text-anchor="middle" fill="#92400e" font-size="18">WIN</text>']
     points=[[1,6,2],[9,5,7],[4,8,3]]
     for i,row in enumerate(grid):
         for j,v in enumerate(row):
@@ -137,11 +137,11 @@ def diagram_svg(grid, spacing=False, limits=None, orientation='columns', transpo
             position_text=f'<text x="{x+4}" y="{y+13}" font-size="10" fill="{ink}">{label}</text>' if show_position_labels else ''
             out.append(f'<rect x="{x}" y="{y}" width="{width}" height="{height}" fill="{color}" stroke="#cbd5e1"/>{position_text}<text x="{x+width/2}" y="{y+height/2+7}" text-anchor="middle" font-size="19" font-weight="700" fill="{ink}">{escape(number(v))}</text>')
     if transpose:
-        out=[part.replace('G/V · Col 1','G/V · 원본 Row 1').replace('Window · Col 7','Window · 원본 Row 7') for part in out]
+        out=[part.replace('G/V','G/V').replace('WIN','WIN') for part in out]
     return ''.join(out)+'</svg>'
 
 SPACING_LAYOUT=[[1,6,2],[9,5,7],[4,8,3]]
-SPACING_LABELS={1:'G/V 좌',6:'G/V 중앙',2:'G/V 우',9:'중앙 좌',5:'Center 기준',7:'중앙 우',4:'Window 좌',8:'Window 중앙',3:'Window 우'}
+SPACING_LABELS={1:'G/V 좌',6:'G/V 중앙',2:'G/V 우',9:'중앙 좌',5:'Center 기준',7:'중앙 우',4:'WIN 좌',8:'WIN 중앙',3:'WIN 우'}
 
 def measurement_number(value):
     return "미측정" if value is None or value=="" else number(value)
@@ -171,10 +171,10 @@ def spacing_diagram_svg(grid,table_mode=False,show_position_labels=True):
          '<rect x="35" y="40" width="630" height="420" rx="24" fill="#e5ecf5" stroke="#64748b" stroke-width="3"/>',
          '<rect x="62" y="67" width="576" height="366" rx="14" fill="#f1f5f9" stroke="#94a3b8" stroke-width="2"/>',
          '<path d="M350 68V432M64 250H636" stroke="#94a3b8" stroke-dasharray="4 5"/>',
-         '<text x="350" y="24" text-anchor="middle" fill="#075985" font-size="18" font-weight="700">▲ GATE VALVE · G/V 측</text>',
-         '<text x="350" y="490" text-anchor="middle" fill="#92400e" font-size="18" font-weight="700">▼ WINDOW 측</text>']
+         '<text x="350" y="24" text-anchor="middle" fill="#075985" font-size="18" font-weight="700">▲ G/V</text>',
+         '<text x="350" y="490" text-anchor="middle" fill="#92400e" font-size="18" font-weight="700">▼ WIN</text>']
     if table_mode:
-        svg=svg[:1]+['<rect x="62" y="67" width="576" height="366" rx="12" fill="#f1f5f9" stroke="#94a3b8"/>','<text x="350" y="24" text-anchor="middle" fill="#075985" font-size="18" font-weight="700">▲ GATE VALVE · G/V 측</text>','<text x="350" y="490" text-anchor="middle" fill="#92400e" font-size="18" font-weight="700">▼ WINDOW 측</text>']
+        svg=svg[:1]+['<rect x="62" y="67" width="576" height="366" rx="12" fill="#f1f5f9" stroke="#94a3b8"/>','<text x="350" y="24" text-anchor="middle" fill="#075985" font-size="18" font-weight="700">▲ G/V</text>','<text x="350" y="490" text-anchor="middle" fill="#92400e" font-size="18" font-weight="700">▼ WIN</text>']
     for y,row in enumerate(SPACING_LAYOUT):
         for x,point in enumerate(row):
             left=82+x*185;top=90+y*112;v=values[point-1]
