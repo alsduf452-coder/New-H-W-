@@ -46,7 +46,7 @@ def measurement_detail(record):
     left.subheader(kind+' 실측 데이터')
     right.subheader(kind+' 측정 위치도')
     if spacing and compact is not None:
-        for panel in (left,right):panel.caption('▲ G/V 측: ①⑥② / 중앙: ⑨⑤⑦ / ▼ Window 측: ④⑧③')
+        for panel in (left,right):panel.caption('▲ G/V: ①⑥② / 중앙: ⑨⑤⑦ / ▼ WIN: ④⑧③')
         left.markdown(spacing_table_html(compact),unsafe_allow_html=True)
         right.markdown(diagram_svg(compact,True),unsafe_allow_html=True)
     else:
@@ -54,7 +54,7 @@ def measurement_detail(record):
         drawing=diagram_svg(grid)
         if spacing:
             # Sparse nonstandard points retain their Excel row/column coordinates.
-            drawing=drawing.replace('G/V · Col 1','원본 Row 1 → '+str(len(grid))).replace('Window · Col 7','원본 Col 1 → '+str(len(grid[0])))
+            drawing=drawing.replace('G/V','원본 Row 1 → '+str(len(grid))).replace('WIN','원본 Col 1 → '+str(len(grid[0])))
             for panel in (left,right):panel.caption('비정형 측정 배치 · 원본 행·열 위치 유지 · 빈칸은 미측정')
         right.markdown(drawing,unsafe_allow_html=True)
     summary=record['stats']
