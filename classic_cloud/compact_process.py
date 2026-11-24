@@ -56,9 +56,10 @@ def compact_html(unit,run,data,hw):
     .fit-board td{font-size:15px;font-weight:600;text-align:center;padding:2px!important;border:1px solid #cbd5e1}
     .fit-board .spacing td{background:#fff}.fit-board .spacing tr:nth-child(2) td:nth-child(2){background:#e0f2fe}
     .fit-bottom{display:grid;grid-template-columns:minmax(0,3fr) minmax(0,2fr);gap:10px;margin-top:10px}
+    .fit-bottom>section:first-child{width:66%;box-sizing:border-box;align-self:start}
     .fit-map{display:grid;grid-template-columns:18px minmax(0,1fr) 18px;gap:5px;align-items:center;margin-top:6px}
     .fit-map>span{writing-mode:vertical-rl;font-size:12px}
-    .fit-map-body{height:clamp(170px,24vh,240px)}
+    .fit-map-body{height:clamp(112.2px,15.84vh,158.4px)}
     .fit-map-body>div{height:100%!important;font-size:18px!important}
     .fit-empty{height:100%;display:flex;align-items:center;justify-content:center;border:1px solid #cbd5e1}
     .fit-unif{font-size:24px;font-weight:700;margin:6px 0 10px}
