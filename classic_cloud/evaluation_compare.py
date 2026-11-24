@@ -221,7 +221,7 @@ def comparison_panel(unit, chamber, runs, run, data, hw, mode):
             if st.session_state.get(record_key) not in by_id:
                 st.session_state[record_key]=candidates[0]['id']
             identifier=st.selectbox('비교 평가 기록',list(by_id),
-                format_func=lambda k:by_id[k]['date']+' · '+by_id[k]['recipe']+' · '+by_id[k]['source_cell'],
+                format_func=lambda k, records=by_id:records[k]['date']+' · '+records[k]['recipe']+' · '+records[k]['source_cell'],
                 key=record_key)
             selected.append(by_id[identifier])
     if not selected:
