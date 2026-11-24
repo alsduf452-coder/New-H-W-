@@ -97,9 +97,13 @@ def comparison_html(unit, selected, data, hw, delta=False):
         scale = limits(grids)
         for (measured, reason), grid in zip(linked, grids):
             chart = hardware_table(grid, kind == 'Spacing', scale) if measured and grid else placeholder('연결 확인 필요')
-            caption = 'H/W 측정일 '+measured['date'] if measured else reason
+            caption = ('H/W 측정일<br><span class="eval-measured-date">'+escape(measured['date'].replace('-','.'))+'</span>') if measured else escape(reason)
+            if kind=='Spacing':
+                chart='<div class="eval-direction-horizontal">G/V</div>'+chart+'<div class="eval-direction-horizontal">WIN</div>'
+            else:
+                chart='<div class="eval-direction-wrap"><span>G/V</span><div>'+chart+'</div><span>WIN</span></div>'
             cells.append('<section class="eval-hardware"><div class="eval-hw-label"><h4>'+kind+
-                         '</h4><div class="eval-caption">'+escape(caption)+'</div></div><div class="eval-hw-values">'+chart+'</div></section>')
+                         '</h4><div class="eval-caption">'+caption+'</div></div><div class="eval-hw-values">'+chart+'</div></section>')
     grids = [run['grid'] for run in selected]
     shared = limits(grids)
     deltas = [difference(g, grids[0]) for g in grids]
@@ -136,6 +140,12 @@ def comparison_html(unit, selected, data, hw, delta=False):
     .eval-grid .eval-hardware{display:grid;grid-template-columns:86px minmax(0,1fr);gap:6px;align-items:center;padding:4px 8px;border-radius:3px;border-width:0 0 1px}
     .eval-hw-label h4{font-size:14px!important;line-height:1.3;margin:0 0 6px;padding:0}
     .eval-hw-values{min-width:0}
+    .eval-measured-date{white-space:nowrap;display:inline-block}
+    .eval-direction-horizontal{text-align:center;font-size:10px;line-height:12px;color:#075985}
+    .eval-direction-wrap{display:grid;grid-template-columns:13px minmax(0,1fr) 13px;gap:3px;align-items:center}
+    .eval-direction-wrap>div{min-width:0}
+    .eval-direction-wrap>span{writing-mode:vertical-rl;font-size:10px;color:#075985;justify-self:center}
+    .eval-direction-wrap>span:first-child{transform:rotate(180deg)}
     .eval-hw-label .eval-caption{min-height:0;font-size:11px;line-height:1.35}
     .eval-hardware p{margin:0}
     .eval-hw-table{width:100%;height:105px;table-layout:fixed;border-collapse:collapse;margin:0;font-variant-numeric:tabular-nums}
