@@ -124,8 +124,8 @@ def comparison_html(unit, selected, data, hw, delta=False):
         title = 'D/R 공정 Map' if unit == '15' else run['recipe']+' 공정 Map'
         if use_delta:
             title += ' · 기준 대비 차이'
-        cells.append('<section><h3>'+escape(title)+'</h3><div class="eval-map"><span class="eval-side">G/V 측</span><div>'+chart+
-                     '</div><span class="eval-side">Window 측</span></div><div class="eval-unif">'+footer+'</div></section>')
+        cells.append('<section><h3>'+escape(title)+'</h3><div class="eval-map"><span class="eval-side">G/V</span><div>'+chart+
+                     '</div><span class="eval-side">WIN</span></div><div class="eval-unif">'+footer+'</div></section>')
     if unit == '45':
         for run in selected:
             rows = []
