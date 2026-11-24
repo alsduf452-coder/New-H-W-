@@ -89,7 +89,7 @@ def comparison_html(unit, selected, data, hw, delta=False):
                 continue
             changed = i > 0 and value != base.get(field)
             conditions.append('<span'+(' class="eval-changed"' if changed else '')+'>'+escape(label+': '+str(value))+'</span>')
-        cells.append('<section><h3>'+title+' · '+escape(run['date'])+'</h3><div class="eval-conditions">'+
+        cells.append('<section><h3>'+title+' · CH '+escape(run['chamber'])+' · '+escape(run['date'])+'</h3><div class="eval-conditions">'+
                      ' · '.join(conditions)+'</div><small>평가 기록 '+escape(run.get('source_cell', ''))+'</small></section>')
     for kind in KINDS:
         linked = [linked_measurement(unit, run, data, hw, kind) for run in selected]
@@ -173,21 +173,42 @@ def comparison_panel(unit, chamber, runs, run, data, hw, mode):
     st.caption(('Barrier 단일막' if unit == '15' else run['recipe'])+' · 위에서 선택한 공정 평가 기록을 기준으로 비교합니다.')
     prefix = f'compare_{unit}_{chamber}_{run["id"]}'
     same_recipe = True if unit == '45' else st.checkbox('동일 레시피만 비교', value=True, key=prefix+'_same')
-    candidates = {r['id']: r for r in runs if r['id'] != run['id'] and r['chamber'] == chamber
-                  and (not same_recipe or r['recipe'] == run['recipe'])}
-    if not candidates:
-        st.info('같은 조건의 비교 가능한 평가 기록이 없습니다.')
+    available = [r for r in data.get('records', runs) if r['id'] != run['id']
+                 and (not same_recipe or r['recipe'] == run['recipe'])]
+    if not available:
+        st.info('같은 공정의 비교 가능한 평가 기록이 없습니다.')
         return True
-    key = prefix+('_same_runs' if same_recipe else '_all_runs')
-    if key in st.session_state:
-        st.session_state[key] = [k for k in st.session_state[key] if k in candidates][:2]
-    ids = st.multiselect('비교 평가 기록 (최대 2개)', list(candidates), default=list(candidates)[:1], max_selections=2,
-                         format_func=lambda k: candidates[k]['date']+' · '+candidates[k]['recipe']+' · '+candidates[k]['source_cell'], key=key)
-    if not ids:
-        st.info('비교할 평가 기록을 선택해주세요.')
+    count=st.radio('비교 대상 수',[1,2],horizontal=True,key=prefix+'_count')
+    selected=[]
+    for index, panel in enumerate(st.columns(count)):
+        with panel:
+            slot=prefix+f'_slot{index}_'+str(same_recipe)
+            st.markdown(f'**비교 평가 {index+1}**')
+            remaining=[r for r in available if r['id'] not in {x['id'] for x in selected}]
+            chambers=sorted({r['chamber'] for r in remaining})
+            if not chambers:
+                st.info('추가로 비교할 평가 기록이 없습니다.')
+                continue
+            chamber_key=slot+'_chamber'
+            if st.session_state.get(chamber_key) not in chambers:
+                st.session_state[chamber_key]=chamber if chamber in chambers else chambers[0]
+            other_chamber=st.selectbox('비교 챔버',chambers,key=chamber_key)
+            candidates=sorted([r for r in remaining if r['chamber']==other_chamber],
+                              key=lambda r:(r['date'],r.get('source_cell','')),reverse=True)
+            # Prefer the same evaluation date; retain a stable source-cell ordering on ties.
+            candidates.sort(key=lambda r:r['date']!=run['date'])
+            by_id={r['id']:r for r in candidates}
+            record_key=slot+'_'+other_chamber+'_record'
+            if st.session_state.get(record_key) not in by_id:
+                st.session_state[record_key]=candidates[0]['id']
+            identifier=st.selectbox('비교 평가 기록',list(by_id),
+                format_func=lambda k:by_id[k]['date']+' · '+by_id[k]['recipe']+' · '+by_id[k]['source_cell'],
+                key=record_key)
+            selected.append(by_id[identifier])
+    if not selected:
         return True
     delta = st.segmented_control('공정 Map 표시', ['원본 값', '기준 대비 차이'], default='원본 값', key=prefix+'_display') == '기준 대비 차이'
     st.caption('같은 항목은 색상 범위를 통일합니다. 차이는 비교값 − 기준값이며, 측정값이 없는 위치는 계산하지 않습니다.' if not delta
                else '기준 Map은 원본 값입니다. 비교 Map은 증가 빨강·0 노랑·감소 초록으로 표시하며, 색은 양호/불량 판정이 아닙니다.')
-    st.markdown(comparison_html(unit, [run]+[candidates[k] for k in ids], data, hw, delta), unsafe_allow_html=True)
+    st.markdown(comparison_html(unit, [run]+selected, data, hw, delta), unsafe_allow_html=True)
     return True
