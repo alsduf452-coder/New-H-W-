@@ -130,17 +130,19 @@ def comparison_html(unit, selected, data, hw, delta=False):
                 rows.append('<tr><th>'+escape(key)+'</th><td>'+escape(text)+'</td></tr>')
             cells.append('<section><h3>공정 결과</h3><table class="classic-table">'+''.join(rows)+'</table></section>')
     return '''<style>
-    .eval-scroll{overflow-x:auto}.eval-grid{display:grid;gap:8px;align-items:stretch}
+    .eval-scroll{overflow-x:auto}.eval-grid{display:grid;gap:4px 8px;align-items:stretch}
     .eval-grid section{min-width:0;border:1px solid #cbd5e1;border-radius:10px;padding:12px;background:#f8fafc}
     .eval-grid h3{margin:0 0 8px}.eval-caption{color:#60758b;min-height:32px;font-size:11px;overflow-wrap:anywhere}
-    .eval-grid .eval-hardware{display:grid;grid-template-columns:92px minmax(0,1fr);gap:8px;align-items:center;padding:8px}
+    .eval-grid .eval-hardware{display:grid;grid-template-columns:86px minmax(0,1fr);gap:6px;align-items:center;padding:4px 8px;border-radius:3px;border-width:0 0 1px}
     .eval-hw-label h4{font-size:14px!important;line-height:1.3;margin:0 0 6px;padding:0}
     .eval-hw-values{min-width:0}
-    .eval-hw-table{width:100%;height:130px;table-layout:fixed;border-collapse:collapse;margin:0;font-variant-numeric:tabular-nums}
+    .eval-hw-label .eval-caption{min-height:0;font-size:11px;line-height:1.35}
+    .eval-hardware p{margin:0}
+    .eval-hw-table{width:100%;height:105px;table-layout:fixed;border-collapse:collapse;margin:0;font-variant-numeric:tabular-nums}
     .eval-hw-table td{padding:2px 0;border:1px solid #cbd5e1;text-align:center;font-size:14px;font-weight:700;line-height:1.15}
-    .eval-hw-table.spacing{height:100px}.eval-hw-table.spacing td{font-size:17px;background:#fff;color:#17324d}
+    .eval-hw-table.spacing{height:78px}.eval-hw-table.spacing td{font-size:17px;background:#fff;color:#17324d}
     .eval-hw-table.spacing tr:nth-child(2) td:nth-child(2){background:#e0f2fe;border:2px solid #0891b2}
-    .eval-hw-values .eval-empty{aspect-ratio:auto;height:130px;font-size:13px;text-align:center}
+    .eval-hw-values .eval-empty{aspect-ratio:auto;height:105px;font-size:13px;text-align:center}
     .eval-empty{aspect-ratio:700/510;border:1px solid #cbd5e1;display:flex;align-items:center;justify-content:center}
     .eval-map{display:grid;grid-template-columns:20px minmax(0,1fr) 20px;align-items:center;gap:5px}
     .eval-map table{border-collapse:collapse;margin:0;width:100%;table-layout:fixed;height:240px}
