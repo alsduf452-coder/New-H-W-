@@ -1,5 +1,12 @@
 <!doctype html><html lang="ko"><head><meta charset="utf-8"><style id="app-font"></style><style>
 html,body{margin:0;padding:0;background:transparent;color:#17324d;font-family:"Source Sans",sans-serif;font-size:16px;font-weight:400;line-height:1.6}*{box-sizing:border-box}h3{font-size:20px;font-weight:600;line-height:1.2}h4{padding:0;font-weight:600}table{border-collapse:collapse}th,td{overflow-wrap:anywhere}.classic-table{width:100%;table-layout:fixed;font-size:13px}.classic-table th,.classic-table td{border:1px solid #d5e0eb;padding:8px}.classic-table th{background:#e7eef6}
+/* Explicit cell typography: do not rely on iframe/table font inheritance. */
+#root,#root table,#root th,#root td,#root h3,#root h4{font-family:"Source Sans","Segoe UI","Malgun Gothic",sans-serif!important}
+#root .eval-hw-table td,#root .eval-map td{font-size:15px!important;font-weight:600!important;line-height:1.2!important;font-variant-numeric:tabular-nums}
+#root .eval-hw-table.spacing td{font-size:16px!important}
+#root .eval-hw-label h4{font-size:14px!important;font-weight:600!important}
+#root .eval-grid h3{font-size:18px!important;font-weight:600!important;line-height:1.3}
+#root .eval-caption{font-size:12px!important}
 #root .eval-scroll{cursor:grab;touch-action:pan-x pan-y;user-select:none;overscroll-behavior-x:contain}
 #root .eval-scroll.dragging{cursor:grabbing}#root .eval-scroll:focus-visible{outline:2px solid #3979bb;outline-offset:-2px}
 </style></head><body><div id="root"></div><script>
