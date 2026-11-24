@@ -116,7 +116,15 @@ def sync_status_panel():
             st.warning('기존 앱 DB 반영에 충돌이 있습니다. 새 앱은 가장 최근 수신한 Excel 스냅샷을 표시합니다. 기존 앱의 충돌 내역을 별도로 확인해주세요.')
 
 with st.sidebar:
-    st.markdown('**🔷 양산 설비 통합 관리**')
+    # H&IRUJA company logo listed at https://thevc.kr/hniruja.
+    st.markdown(
+        '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">'
+        '<img src="https://logo-resources.thevc.kr/organizations/200x200/'
+        '789c21bf0cc890698ee43bb4a4503deef3a89a4ceffdd6d1ff6a018aaf45c6f6_1584178324421197.jpg" '
+        'alt="H&amp;IRUJA" style="width:40px;height:40px;object-fit:contain;flex-shrink:0">'
+        '<strong>양산 설비 통합 관리</strong></div>',
+        unsafe_allow_html=True,
+    )
     st.caption('PECVD 설비 · Excel 연동 조회')
     pages=['PENDING 현황','PENDING List REV관리','설비 H/W 이력관리']
     if generation=='6G':pages.append('H/W · 공정 Map')
