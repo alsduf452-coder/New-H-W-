@@ -8,7 +8,6 @@ from sync_control import SyncControl
 from classic_cloud.sync_status import render_sync_status
 from classic_cloud import model, views, hw86_views, process_views, process45_views
 from classic_cloud.visuals import STYLE, cards
-from login_ui import require_local, guard_fragment
 
 st.set_page_config(page_title='양산 설비 통합 관리 · Excel 연동', page_icon='🔷', layout='wide')
 st.markdown(STYLE,unsafe_allow_html=True)
@@ -33,7 +32,7 @@ def reader(url):
     return SnapshotReader(url)
 
 if mode=='demo':
-    st.info('가상 샘플 미리보기입니다. 운영 데이터를 보려면 새 앱의 Secrets에 기존 DB·자체 로그인 설정을 등록해주세요.')
+    st.info('가상 샘플 미리보기입니다. 운영 데이터를 보려면 새 앱의 Secrets에 기존 DB 설정을 등록해주세요.')
     from classic_cloud.sample import snapshots
     def read_sources():
         data=snapshots()
@@ -41,10 +40,6 @@ if mode=='demo':
         if generation=='8G':data['pending']={'revision':0,'state':{},'previews':{}}
         return data
 elif mode=='postgres':
-    if settings.get('login',{}).get('method')!='password':
-        st.error('새 앱은 자체 로그인을 사용합니다. Secrets의 [login] method를 password로 설정해주세요.');st.stop()
-    actor,_=require_local(settings)
-    st.sidebar.caption(actor+' · 조회 전용')
     try:
         database=reader(settings.get('database',{}).get('url',''))
     except Exception:
@@ -86,14 +81,13 @@ except Exception:
 
 @st.fragment(run_every=15)
 def sync_status_panel():
-    guard_fragment()
     if mode=='postgres':
         try:
             request=SyncControl(database.engine).status()
             if request:
                 render_sync_status(request,compact=True)
         except Exception:
-            if st.session_state.get('manual_requested'):st.warning('수동 동기화 상태를 확인하지 못했습니다.')
+            pass
 
     try:
         current=read_sources()
@@ -130,16 +124,7 @@ with st.sidebar:
     pages=['PENDING 현황','PENDING List REV관리','설비 H/W 이력관리']
     if generation=='6G':pages.append('H/W · 공정 Map')
     page=cards('화면 선택',pages,'classic_page')
-    if st.button('Excel 동기화 요청',use_container_width=True):
-        if mode=='postgres':
-            try:
-                SyncControl(database.engine).request(actor)
-                st.session_state['manual_requested']=True
-            except Exception:
-                st.error('수동 동기화 요청을 등록하지 못했습니다. 새 수신 서버 배포와 DB 연결을 확인해주세요.')
-        else:st.info('샘플 화면에서는 PC 동기화를 요청하지 않습니다.')
     sync_status_panel()
-    st.caption('버튼을 누르면 PC에 Excel 동기화를 요청합니다. PC가 켜져 있고 예약 수신 기능이 등록되어 있어야 합니다.')
     st.caption('화면은 15초마다 수신 데이터를 확인합니다. 수정은 PC Excel에서 저장해주세요.')
 
 if page=='PENDING 현황':
@@ -181,7 +166,6 @@ elif page=='설비 H/W 이력관리' and generation=='6G':
 
 @st.fragment(run_every=15)
 def content():
-    guard_fragment()
     try:
         current=read_sources()
     except Exception:
