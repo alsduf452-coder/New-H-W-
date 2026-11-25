@@ -6,7 +6,7 @@ from hashlib import sha256
 import pandas as pd
 import streamlit as st
 from cloud_store import Repository, ConflictError
-from domain import CATEGORIES, STATES, FIELDS, ValidationError, build_plan
+from domain import CATEGORIES, STATES, FIELDS, ValidationError, access_role, build_plan
 from excel_sync import pending_excel, read_pending_excel
 from sample_data import sample_items
 
@@ -30,18 +30,45 @@ if mode == 'demo':
         for item in sample_items():
             st.session_state.demo_repository.save_item(item, 'sample')
     repo = st.session_state.demo_repository
-    actor, role = 'demo-session', 'viewer'
+    actor, role = 'demo-session', 'editor'
 elif mode == 'postgres':
     url = settings.get('database', {}).get('url', '')
     if not url.startswith(('postgres://', 'postgresql://', 'postgresql+psycopg://')):
-        st.error('운영 DB 설정이 필요합니다.')
+        st.error('운영 DB와 허용 계정 설정이 필요합니다. 자체 로그인 안내를 확인해주세요.')
         st.stop()
-    actor, role = 'anonymous', 'viewer'
+    method = settings.get('login', {}).get('method', 'oidc')
+    if method == 'password':
+        from login_ui import require_local
+        actor, role = require_local(settings)
+    elif method == 'oidc':
+        auth = settings.get('auth', {})
+        access = settings.get('access', {})
+        url = settings.get('database', {}).get('url', '')
+        required = ('client_id', 'client_secret', 'cookie_secret', 'redirect_uri', 'server_metadata_url')
+        if not all(auth.get(k) for k in required) or not isinstance(access.get('allowed_emails'), list) or not access['allowed_emails'] or not url.startswith(('postgres://', 'postgresql://', 'postgresql+psycopg://')):
+            st.error('운영 모드는 PostgreSQL, OIDC 로그인, 허용 계정 설정이 필요합니다. README를 확인해주세요.')
+            st.stop()
+        if not st.user.is_logged_in:
+            if st.button('계정으로 로그인'):
+                st.login()
+            st.stop()
+        actor = st.user.get('email', '')
+        role = access_role(actor, access['allowed_emails'], access.get('editor_emails', []))
+        if st.sidebar.button('로그아웃'):
+            st.session_state.clear()
+            st.logout()
+        if role is None:
+            st.error('이 앱에 허용된 계정이 아닙니다. 관리자에게 문의해주세요.')
+            st.stop()
+    else:
+        st.error('지원하지 않는 로그인 방식입니다.')
+        st.stop()
     try:
         repo = persistent_repository(url)
     except Exception:
         st.error('DB 연결에 실패했습니다. 관리자에게 연결 설정을 확인해주세요.')
         st.stop()
+    st.sidebar.caption(f'{actor} · {role}')
 else:
     st.error('지원하지 않는 저장 모드입니다.')
     st.stop()
