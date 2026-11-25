@@ -45,26 +45,30 @@ def compact_html(unit,run,data,hw):
     meta=run['date']+' · PC '+run['chamber']+' · '+run['recipe']+' · Diffuser '+(run.get('diffuser_sn') or '—')+' · Susceptor '+(run.get('susceptor_sn') or '—')
     return '''<style>
     .block-container:has(.fit-board){padding-top:1rem;padding-bottom:1rem}
-    .fit-board{color:#17324d;font-size:14px}
+    .fit-board{--fit-chart-height:clamp(130px,19vh,185px);color:#17324d;font-size:14px}
     .fit-meta{font-size:12px;margin:0 0 8px;overflow-wrap:anywhere}
     .fit-top{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
     .fit-board section{padding:8px 10px;border:1px solid #cbd5e1;border-radius:8px;min-width:0}
     .fit-board h3{font-size:16px!important;margin:0 0 3px;padding:0}
     .fit-board small{font-size:12px;color:#60758b;display:block}
-    .fit-hw{margin:5px 0;height:clamp(130px,19vh,185px)}
+    .fit-hw{margin:5px 0;height:var(--fit-chart-height)}
     .fit-board table{border-collapse:collapse;table-layout:fixed;width:100%;margin:0;height:100%}
     .fit-board td{font-size:15px;font-weight:600;text-align:center;padding:2px!important;border:1px solid #cbd5e1}
     .fit-board .spacing td{background:#fff}.fit-board .spacing tr:nth-child(2) td:nth-child(2){background:#e0f2fe}
-    .fit-bottom{display:grid;grid-template-columns:minmax(0,3fr) minmax(0,2fr);gap:10px;margin-top:10px}
-    .fit-bottom>section:first-child{width:66%;box-sizing:border-box;align-self:start}
-    .fit-map{display:grid;grid-template-columns:18px minmax(0,1fr) 18px;gap:5px;align-items:center;margin-top:6px}
-    .fit-map>span{writing-mode:vertical-rl;font-size:12px}
-    .fit-map-body{height:clamp(112.2px,15.84vh,158.4px)}
+    .fit-bottom{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1fr);gap:10px;margin-top:10px;align-items:start}
+    .fit-bottom>section:last-child{grid-column:2 / 4}
+    .fit-bottom>section:first-child{box-sizing:border-box}
+    .fit-map{position:relative;margin:6px 0 18px}
+    .fit-map>span{position:absolute;bottom:-18px;font-size:12px;line-height:16px}
+    .fit-map>span:first-child{left:0}.fit-map>span:last-child{right:0}
+    .fit-map-body{height:var(--fit-chart-height);min-width:0}
+    .fit-board .fit-map-body>table{height:100%;width:100%;margin:0;table-layout:fixed}
+    .fit-board .fit-map-body td{padding:0 2px!important;line-height:1.1;font-size:14px;vertical-align:middle;overflow-wrap:anywhere}
     .fit-map-body>div{height:100%!important;font-size:18px!important}
     .fit-empty{height:100%;display:flex;align-items:center;justify-content:center;border:1px solid #cbd5e1}
     .fit-unif{font-size:24px;font-weight:700;margin:6px 0 10px}
     .fit-metrics{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
     .fit-metrics>div{background:#edf2f7;border-radius:5px;padding:4px 8px;overflow-wrap:anywhere}
     .fit-metrics strong{font-size:15px}
-    @media(max-width:850px){.fit-top{grid-template-columns:1fr}.fit-bottom{grid-template-columns:1fr}}
+    @media(max-width:850px){.fit-top{grid-template-columns:1fr}.fit-bottom{grid-template-columns:1fr}.fit-bottom>section:last-child{grid-column:auto}}
     </style><div class="fit-board"><div class="fit-meta">'''+escape(meta)+'</div><div class="fit-top">'+''.join(cards)+'</div><div class="fit-bottom"><section><h3>'+escape('D/R 공정 Map' if unit=='15' else run['recipe']+' 공정 Map')+'</h3><div class="fit-map"><span>G/V</span><div class="fit-map-body">'+map_html(run['grid'])+'</div><span>WIN</span></div></section><section><h3>공정 결과</h3><div class="fit-unif">Unif. '+(f'{u:.2f}%' if u is not None else 'Data 없음')+'</div><div class="fit-metrics">'+metrics_html+'</div></section></div></div>'
