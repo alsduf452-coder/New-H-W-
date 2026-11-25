@@ -60,9 +60,12 @@ def compact_html(unit,run,data,hw):
     .fit-bottom{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1fr);gap:10px;margin-top:10px;align-items:start}
     .fit-bottom>section:last-child{grid-column:3}
     .fit-bottom>section.fit-process-map{grid-column:2;box-sizing:border-box}
-    .fit-bottom>section.fit-rf-card{grid-column:1}
-    .fit-board .fit-rf-table{height:auto;margin-top:10px;font-size:12px}
-    .fit-board .fit-rf-table th,.fit-board .fit-rf-table td{padding:8px 3px!important;text-align:center;vertical-align:middle;font-size:12px;font-weight:400;line-height:1.35;overflow-wrap:anywhere;border:1px solid #cbd5e1}
+    .fit-bottom>section.fit-rf-card{grid-column:1;position:relative;box-sizing:border-box}
+    .fit-board .fit-rf-card>h3{padding-right:55px}
+    .fit-board .fit-rf-card>small:not(.fit-rf-missing){position:absolute;top:8px;right:10px;line-height:1.5}
+    .fit-board .fit-rf-table{height:var(--fit-chart-height);margin:6px 0 18px;font-size:13px}
+    .fit-board .fit-rf-table tr{height:33.333%}
+    .fit-board .fit-rf-table th,.fit-board .fit-rf-table td{padding:4px 3px!important;text-align:center;vertical-align:middle;font-size:13px;font-weight:400;line-height:1.25;overflow-wrap:anywhere;border:1px solid #cbd5e1}
     .fit-board .fit-rf-table th{background:#e8edf3;font-weight:600}
     .fit-board .fit-rf-table td{background:#f8fafc}
     .fit-rf-missing{margin-top:8px}
