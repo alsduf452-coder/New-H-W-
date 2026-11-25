@@ -46,7 +46,7 @@ def compact_html(unit,run,data,hw):
     metrics_html=''.join('<div><small>'+escape(k)+'</small><strong>'+escape(number(v))+'</strong></div>' for k,v in metrics.items() if k!='Unif.' and v is not None and v!='')
     meta=run['date']+' · PC '+run['chamber']+' · '+run['recipe']+' · Diffuser '+(run.get('diffuser_sn') or '—')+' · Susceptor '+(run.get('susceptor_sn') or '—')
     return '''<style>
-    .block-container:has(.fit-board){padding-top:1rem;padding-bottom:1rem}
+    .block-container:has(.fit-board){padding-bottom:1rem}
     .fit-board{--fit-chart-height:clamp(130px,19vh,185px);color:#17324d;font-size:14px}
     .fit-meta{font-size:12px;margin:0 0 8px;overflow-wrap:anywhere}
     .fit-top{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
