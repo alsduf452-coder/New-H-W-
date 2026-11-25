@@ -211,7 +211,8 @@ def comparison_panel(unit, chamber, runs, run, data, hw, mode, count=None):
                 used={chamber}|{r['chamber'] for r in selected}
                 unused=[c for c in chambers if c not in used]
                 st.session_state[chamber_key]=unused[0] if unused else chamber if chamber in chambers else chambers[0]
-            other_chamber=st.selectbox('비교 챔버',chambers,key=chamber_key)
+            chamber_column, record_column = st.columns([1, 3])
+            other_chamber=chamber_column.selectbox('비교 챔버',chambers,key=chamber_key)
             candidates=sorted([r for r in remaining if r['chamber']==other_chamber],
                               key=lambda r:(r['date'],r.get('source_cell','')),reverse=True)
             # Prefer the same evaluation date; retain a stable source-cell ordering on ties.
@@ -220,7 +221,7 @@ def comparison_panel(unit, chamber, runs, run, data, hw, mode, count=None):
             record_key=slot+'_'+other_chamber+'_record'
             if st.session_state.get(record_key) not in by_id:
                 st.session_state[record_key]=candidates[0]['id']
-            identifier=st.selectbox('비교 평가 기록',list(by_id),
+            identifier=record_column.selectbox('비교 평가 기록',list(by_id),
                 format_func=lambda k, records=by_id:records[k]['date']+' · '+records[k]['recipe']+' · '+records[k]['source_cell'],
                 key=record_key)
             selected.append(by_id[identifier])
