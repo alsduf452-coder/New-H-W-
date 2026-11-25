@@ -182,7 +182,6 @@ def comparison_panel(unit, chamber, runs, run, data, hw, mode, count=None):
         st.button('이 평가 기준으로 비교', key=f'compare_open_{unit}_{chamber}',
                   on_click=open_comparison, args=(unit, chamber))
         return False
-    st.caption(('Barrier 단일막' if unit == '15' else run['recipe'])+' · 위에서 선택한 공정 평가 기록을 기준으로 비교합니다.')
     prefix = f'compare_{unit}_{chamber}_{run["id"]}'
     same_recipe = True if unit == '45' else st.checkbox('동일 레시피만 비교', value=True, key=prefix+'_same')
     available = [r for r in data.get('records', runs) if r['id'] != run['id']
@@ -193,7 +192,6 @@ def comparison_panel(unit, chamber, runs, run, data, hw, mode, count=None):
     if count is None:
         count=st.selectbox('비교 대상 수',options=[1,2,3,4],
                            format_func=lambda value:str(value)+'개',key=prefix+'_count_select')
-    st.caption(f'기준 1개 + 비교 {count}개 · 총 {count+1}개 평가')
     if count>=3:
         st.caption('비교 표를 좌우로 끌어 모든 평가를 확인할 수 있습니다.')
     selected=[]
