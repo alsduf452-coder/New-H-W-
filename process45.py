@@ -11,8 +11,9 @@ from openpyxl.utils import get_column_letter
 from domain import ValidationError
 from excel_sync import MAX_FILE, MAX_UNCOMPRESSED
 from process_map import serial
+from rf_system import parse_rf_system
 
-SCHEMA_VERSION = 'process45-1'
+SCHEMA_VERSION = 'process45-2'
 SHEETS = tuple('PC_'+ch for ch in 'ABCDE')
 KINDS = ('Spacing', 'Diffuser Flatness', 'Susceptor Flatness')
 
@@ -77,6 +78,7 @@ def parse_process45(content):
                     raise ValidationError(name+': 평가 블록 배치를 확인해주세요.')
                 blocks += 1
                 mt = dated(value(2, c+2))
+                rf_system = parse_rf_system(rows, c, min(c+8, sheet.max_column))
                 hardware = {}
                 for r, title in [(10, 'Diffuser Flatness'), (22, 'Susceptor Flatness'), (34, 'Spacing')]:
                     if value(r, c) != title or value(r, c+1) != 'Date' or value(r+1, c+1) != 'Diff. S/N' or value(r+1, c+3) != 'Susc. S/N':
@@ -110,7 +112,7 @@ def parse_process45(content):
                             warnings.append(name+' '+get_column_letter(c)+str(r)+': 공정 Date 미확정으로 제외')
                         continue
                     identity = sha256(f'{name}|{c}|{recipe}|{when}'.encode()).hexdigest()[:24]
-                    records.append({'id': identity, 'chamber': name[-1], 'date': when, 'mt_date': mt, 'recipe': recipe, 'diffuser_sn': diffuser, 'susceptor_sn': susceptor, 'grid': grid, 'metrics': metrics, 'hardware': hardware, 'source_sheet': name, 'source_cell': get_column_letter(c)+str(r)})
+                    records.append({'id': identity, 'chamber': name[-1], 'date': when, 'mt_date': mt, 'recipe': recipe, 'diffuser_sn': diffuser, 'susceptor_sn': susceptor, 'grid': grid, 'metrics': metrics, 'hardware': hardware, 'rf_system': rf_system, 'source_sheet': name, 'source_cell': get_column_letter(c)+str(r)})
         if not records:
             raise ValidationError('Date가 확인된 45호기 공정 결과가 없습니다.')
         return {'schema': SCHEMA_VERSION, 'equipment': '45호기', 'sheets': list(SHEETS), 'records': records, 'measurements': list(measurements.values()), 'blocks': blocks, 'excluded_results': excluded, 'warnings': warnings}

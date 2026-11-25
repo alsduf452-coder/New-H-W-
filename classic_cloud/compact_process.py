@@ -5,6 +5,7 @@ from classic_cloud.evaluation_compare import (comparison_navigation, comparison_
     linked_measurement, display_grid, hardware_table, limits, uniformity, COMPARE)
 from classic_cloud.visuals import numeric, number
 from process_map import KINDS
+from rf_system import rf_system_card
 
 
 def compact_panel(unit, data, hw):
@@ -39,6 +40,7 @@ def compact_html(unit,run,data,hw):
         caption='H/W 측정일 '+measured['date'] if measured else reason
         direction='G/V ↑ · WIN ↓' if kind=='Spacing' else '← G/V · WIN →'
         cards.append('<section><h3>'+kind+'</h3><small>'+escape(caption)+'</small><div class="fit-hw">'+chart+'</div><small>'+direction+'</small></section>')
+    rf_card=rf_system_card(run) if unit=='45' else ''
     u=uniformity(run,unit)
     metrics=run.get('metrics',{}) if unit=='45' else {'Dep Time':run.get('dep_time'),'HCG':run.get('hcg')}
     metrics_html=''.join('<div><small>'+escape(k)+'</small><strong>'+escape(number(v))+'</strong></div>' for k,v in metrics.items() if k!='Unif.' and v is not None and v!='')
@@ -57,7 +59,13 @@ def compact_html(unit,run,data,hw):
     .fit-board .spacing td{background:#fff}.fit-board .spacing tr:nth-child(2) td:nth-child(2){background:#e0f2fe}
     .fit-bottom{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1fr);gap:10px;margin-top:10px;align-items:start}
     .fit-bottom>section:last-child{grid-column:3}
-    .fit-bottom>section:first-child{grid-column:2;box-sizing:border-box}
+    .fit-bottom>section.fit-process-map{grid-column:2;box-sizing:border-box}
+    .fit-bottom>section.fit-rf-card{grid-column:1}
+    .fit-board .fit-rf-table{height:auto;margin-top:10px;font-size:12px}
+    .fit-board .fit-rf-table th,.fit-board .fit-rf-table td{padding:8px 3px!important;text-align:center;vertical-align:middle;font-size:12px;font-weight:400;line-height:1.35;overflow-wrap:anywhere;border:1px solid #cbd5e1}
+    .fit-board .fit-rf-table th{background:#e8edf3;font-weight:600}
+    .fit-board .fit-rf-table td{background:#f8fafc}
+    .fit-rf-missing{margin-top:8px}
     .fit-map{position:relative;margin:6px 0 18px}
     .fit-map>span{position:absolute;bottom:-18px;font-size:12px;line-height:16px}
     .fit-map>span:first-child{left:0}.fit-map>span:last-child{right:0}
@@ -70,5 +78,5 @@ def compact_html(unit,run,data,hw):
     .fit-metrics{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
     .fit-metrics>div{background:#edf2f7;border-radius:5px;padding:4px 8px;overflow-wrap:anywhere}
     .fit-metrics strong{font-size:15px}
-    @media(max-width:850px){.fit-top{grid-template-columns:1fr}.fit-bottom{grid-template-columns:1fr}.fit-bottom>section:first-child,.fit-bottom>section:last-child{grid-column:auto}}
-    </style><div class="fit-board"><div class="fit-meta">'''+escape(meta)+'</div><div class="fit-top">'+''.join(cards)+'</div><div class="fit-bottom"><section><h3>'+escape('D/R 공정 Map' if unit=='15' else run['recipe']+' 공정 Map')+'</h3><div class="fit-map"><span>G/V</span><div class="fit-map-body">'+map_html(run['grid'])+'</div><span>WIN</span></div></section><section><h3>공정 결과</h3><div class="fit-unif">Unif. '+(f'{u:.2f}%' if u is not None else 'Data 없음')+'</div><div class="fit-metrics">'+metrics_html+'</div></section></div></div>'
+    @media(max-width:850px){.fit-top{grid-template-columns:1fr}.fit-bottom{grid-template-columns:1fr}.fit-bottom>section.fit-rf-card,.fit-bottom>section.fit-process-map,.fit-bottom>section:last-child{grid-column:auto}}
+    </style><div class="fit-board"><div class="fit-meta">'''+escape(meta)+'</div><div class="fit-top">'+''.join(cards)+'</div><div class="fit-bottom">'+rf_card+'<section class="fit-process-map"><h3>'+escape('D/R 공정 Map' if unit=='15' else run['recipe']+' 공정 Map')+'</h3><div class="fit-map"><span>G/V</span><div class="fit-map-body">'+map_html(run['grid'])+'</div><span>WIN</span></div></section><section><h3>공정 결과</h3><div class="fit-unif">Unif. '+(f'{u:.2f}%' if u is not None else 'Data 없음')+'</div><div class="fit-metrics">'+metrics_html+'</div></section></div></div>'
