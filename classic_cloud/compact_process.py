@@ -56,8 +56,8 @@ def compact_html(unit,run,data,hw):
     .fit-board td{font-size:15px;font-weight:600;text-align:center;padding:2px!important;border:1px solid #cbd5e1}
     .fit-board .spacing td{background:#fff}.fit-board .spacing tr:nth-child(2) td:nth-child(2){background:#e0f2fe}
     .fit-bottom{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1fr);gap:10px;margin-top:10px;align-items:start}
-    .fit-bottom>section:last-child{grid-column:2 / 4}
-    .fit-bottom>section:first-child{box-sizing:border-box}
+    .fit-bottom>section:last-child{grid-column:3}
+    .fit-bottom>section:first-child{grid-column:2;box-sizing:border-box}
     .fit-map{position:relative;margin:6px 0 18px}
     .fit-map>span{position:absolute;bottom:-18px;font-size:12px;line-height:16px}
     .fit-map>span:first-child{left:0}.fit-map>span:last-child{right:0}
@@ -70,5 +70,5 @@ def compact_html(unit,run,data,hw):
     .fit-metrics{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
     .fit-metrics>div{background:#edf2f7;border-radius:5px;padding:4px 8px;overflow-wrap:anywhere}
     .fit-metrics strong{font-size:15px}
-    @media(max-width:850px){.fit-top{grid-template-columns:1fr}.fit-bottom{grid-template-columns:1fr}.fit-bottom>section:last-child{grid-column:auto}}
+    @media(max-width:850px){.fit-top{grid-template-columns:1fr}.fit-bottom{grid-template-columns:1fr}.fit-bottom>section:first-child,.fit-bottom>section:last-child{grid-column:auto}}
     </style><div class="fit-board"><div class="fit-meta">'''+escape(meta)+'</div><div class="fit-top">'+''.join(cards)+'</div><div class="fit-bottom"><section><h3>'+escape('D/R 공정 Map' if unit=='15' else run['recipe']+' 공정 Map')+'</h3><div class="fit-map"><span>G/V</span><div class="fit-map-body">'+map_html(run['grid'])+'</div><span>WIN</span></div></section><section><h3>공정 결과</h3><div class="fit-unif">Unif. '+(f'{u:.2f}%' if u is not None else 'Data 없음')+'</div><div class="fit-metrics">'+metrics_html+'</div></section></div></div>'
