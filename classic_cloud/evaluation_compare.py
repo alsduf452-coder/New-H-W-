@@ -226,14 +226,10 @@ def comparison_panel(unit, chamber, runs, run, data, hw, mode, count=None):
             selected.append(by_id[identifier])
     if not selected:
         return True
-    delta = st.segmented_control('공정 Map 표시', ['원본 값', '기준 대비 차이'], default='원본 값', key=prefix+'_display') == '기준 대비 차이'
-    st.caption('같은 항목은 색상 범위를 통일합니다. 차이는 비교값 − 기준값이며, 측정값이 없는 위치는 계산하지 않습니다.' if not delta
-               else '기준 Map은 원본 값입니다. 비교 Map은 증가 빨강·0 노랑·감소 초록으로 표시하며, 색은 양호/불량 판정이 아닙니다.')
     from pathlib import Path
     from streamlit.components.v1 import declare_component
     drag_view=declare_component('process_comparison_drag',path=str(Path(__file__).parent/'drag_compare'))
-    st.caption('표를 마우스로 누른 채 좌우로 끌어 이동하세요. 터치·방향키·가로 스크롤도 사용할 수 있습니다.')
-    drag_view(html=comparison_html(unit, [run]+selected, data, hw, delta),font_css=comparison_font_css(),key=prefix+'_drag_view',default=None)
+    drag_view(html=comparison_html(unit, [run]+selected, data, hw, delta=False),font_css=comparison_font_css(),key=prefix+'_drag_view',default=None)
     return True
 
 
